@@ -1,0 +1,20 @@
+{
+  "name": "@nod/demo-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pair": "tsx src/pair.ts",
+    "payments": "tsx src/payments.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nod/sdk": "*",
+    "@solana/web3.js": "^1.99.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.20.55",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}
