@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+firebase-service-account.json
+google-services.json
+*.keystore
+*.jks
+*.keypair.json
+.expo/
+app/android/
+app/ios/
+.DS_Store
+*.log

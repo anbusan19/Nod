@@ -1,0 +1,10 @@
+{
+  "name": "nod",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["backend", "sdk", "demo-agent"],
+  "scripts": {
+    "backend": "npm run dev -w backend",
+    "test": "npm test --workspaces --if-present"
+  }
+}
