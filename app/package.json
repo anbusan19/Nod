@@ -1,0 +1,41 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo-google-fonts/geist-mono": "^0.4.3",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
+    "@noble/hashes": "^2.4.0",
+    "@solana-mobile/mobile-wallet-adapter-protocol": "^3.0.0",
+    "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^3.0.0",
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.99.0",
+    "bs58": "^6.0.0",
+    "buffer": "^6.0.3",
+    "expo": "~57.0.27",
+    "expo-build-properties": "~57.0.22",
+    "expo-dev-client": "~57.0.19",
+    "expo-font": "~57.0.4",
+    "expo-haptics": "~57.0.3",
+    "expo-linking": "~57.0.12",
+    "expo-local-authentication": "~57.0.3",
+    "expo-notifications": "~57.0.22",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-get-random-values": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
+}
