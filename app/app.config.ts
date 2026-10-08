@@ -18,15 +18,14 @@ const config: ExpoConfig = {
     googleServicesFile,
     permissions: ["USE_BIOMETRIC"],
     adaptiveIcon: {
-      backgroundColor: "#0B0D12",
+      backgroundColor: "#070606",
       foregroundImage: "./assets/android-icon-foreground.png",
-      backgroundImage: "./assets/android-icon-background.png",
-      monochromeImage: "./assets/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
   },
   plugins: [
     "expo-font",
+    ["expo-splash-screen", { image: "./assets/splash-icon.png", backgroundColor: "#070606", imageWidth: 200 }],
     "expo-secure-store",
     ["expo-local-authentication", { faceIDPermission: "Nod uses biometrics to confirm approvals." }],
     "expo-notifications",
