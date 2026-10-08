@@ -44,6 +44,16 @@ export function buildApp({ db, push, now = Date.now }: Deps) {
   const app = Fastify({ logger: false });
   app.register(cors, { origin: true });
 
+  // Clients send content-type: application/json even on body-less POSTs; treat those as {}.
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    if (!body) return done(null, {});
+    try {
+      done(null, JSON.parse(body as string));
+    } catch {
+      done(Object.assign(new Error("invalid JSON body"), { statusCode: 400 }), undefined);
+    }
+  });
+
   // ---- auth helpers -------------------------------------------------------
   const bearer = (req: FastifyRequest) => (req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
 

@@ -558,14 +558,14 @@ Update this table honestly before submitting.
 
 | Feature | Status |
 |---|---|
-| MWA authorize + sign on a real device | [ ] |
-| FCM push to the device | [ ] |
-| Local decoder: SOL and SPL transfers | [ ] |
-| Simulation + balance deltas | [ ] |
-| Biometric gate | [ ] |
-| Tier 1 / Tier 2 policy engine | [ ] |
-| Activity feed | [ ] |
-| Demo payment agent | [ ] |
+| MWA authorize + sign on a real device | [ ] code written, needs device test |
+| FCM push to the device | [ ] code written, needs google-services.json |
+| Local decoder: SOL and SPL transfers | [x] unit-tested |
+| Simulation + balance deltas | [x] written, untested on device |
+| Biometric gate | [x] written, untested on device |
+| Tier 1 / Tier 2 policy engine | [x] unit-tested (tier 1 does not execute yet) |
+| Activity feed | [x] |
+| Demo payment agent | [x] written, untested against devnet |
 | Jupiter swap decoding | [ ] |
 | Squads multisig (tier 3) | [ ] stretch |
 | Squads on-chain spending limits | [ ] stretch |

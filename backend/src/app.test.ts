@@ -36,6 +36,16 @@ beforeEach(() => {
 });
 
 describe("api", () => {
+  it("accepts body-less POSTs sent with a JSON content type", async () => {
+    const dev = (await json("POST", "/v1/devices", undefined, {})).body;
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/pairings",
+      headers: { authorization: `Bearer ${dev.deviceToken}`, "content-type": "application/json" },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
   it("rejects unauthenticated proposals", async () => {
     const r = await json("POST", "/v1/proposals", undefined, { transaction: "x" });
     expect(r.status).toBe(401);
