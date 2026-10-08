@@ -64,7 +64,8 @@ export async function approve(p: Prepared, owner: string): Promise<ApproveOutcom
     const signed = await signWithWallet(p.tx, owner);
     await api.result(p.proposal.id, { status: "approved", txHash }).catch(() => {});
     const signature = await sendAndConfirm(signed, p.decoded.recentBlockhash);
-    await api.result(p.proposal.id, { status: "confirmed", txHash, signature });
+    // The transaction has landed; a failure to tell the backend must not read as a failed payment.
+    await api.result(p.proposal.id, { status: "confirmed", txHash, signature }).catch(() => {});
     return { ok: true, signature };
   } catch (e) {
     const message = (e as Error).message;

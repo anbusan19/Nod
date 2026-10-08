@@ -1,0 +1,97 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { api, type Agent, type Proposal } from "./api/client";
+import { decodeTransaction, deserialize } from "./solana/decode";
+import { connectWallet, disconnectWallet } from "./solana/mwa";
+import { kv } from "./storage";
+
+interface AppState {
+  ready: boolean;
+  error?: string;
+  wallet?: string;
+  proposals: Proposal[];
+  agents: Agent[];
+  openProposalId?: string;
+  openProposal: (id?: string) => void;
+  refresh: () => Promise<void>;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  /** Destinations the user has already sent to via Nod. */
+  knownRecipients: Set<string>;
+}
+
+const Ctx = createContext<AppState>(null as unknown as AppState);
+export const useApp = () => useContext(Ctx);
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string>();
+  const [wallet, setWallet] = useState<string>();
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [openProposalId, openProposal] = useState<string>();
+
+  const refresh = useCallback(async () => {
+    try {
+      const [p, a] = await Promise.all([api.proposals(), api.agents()]);
+      setProposals(p);
+      setAgents(a);
+      setError(undefined);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await api.ensureDevice();
+        setWallet((await kv.get("walletAddress")) ?? undefined);
+        await refresh();
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, [refresh]);
+
+  useEffect(() => {
+    const t = setInterval(refresh, 4000);
+    return () => clearInterval(t);
+  }, [refresh]);
+
+  const connect = useCallback(async () => {
+    const s = await connectWallet();
+    setWallet(s.address);
+    await api.updateDevice({ wallet: s.address }).catch(() => {});
+  }, []);
+
+  const disconnect = useCallback(async () => {
+    await disconnectWallet();
+    setWallet(undefined);
+  }, []);
+
+  // Allowlisted recipients plus anyone a past confirmed proposal already paid.
+  const knownRecipients = useMemo(() => {
+    const known = new Set<string>();
+    for (const a of agents) a.policy?.allowedRecipients.forEach((r) => known.add(r));
+    for (const p of proposals) {
+      if (p.status !== "confirmed") continue;
+      try {
+        for (const ix of decodeTransaction(deserialize(p.transaction)).instructions) {
+          if (ix.kind === "sol-transfer") known.add(ix.to);
+          if (ix.kind === "spl-transfer") known.add(ix.destination);
+        }
+      } catch {
+        // Transactions using lookup tables can't be decoded offline; skip them.
+      }
+    }
+    return known;
+  }, [agents, proposals]);
+
+  const value = useMemo(
+    () => ({ ready, error, wallet, proposals, agents, openProposalId, openProposal, refresh, connect, disconnect, knownRecipients }),
+    [ready, error, wallet, proposals, agents, openProposalId, refresh, connect, disconnect, knownRecipients],
+  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
