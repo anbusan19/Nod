@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { TextInput } from "react-native";
 import { ScrollView, View } from "react-native";
 import { getServerUrl } from "../api/client";
-import { parseServerUrl } from "../api/server";
+import { inspectServer, parseServerUrl } from "../api/server";
 import { fonts } from "../theme/fonts";
 import { Button, Card, Mono, T } from "../components/ui";
 import { getAuthMethod } from "../security/biometric";
@@ -37,9 +37,8 @@ export function Settings() {
       if (!reset) {
         const parsed = parseServerUrl(serverInput, { allowInsecure: __DEV__ });
         if (!parsed.ok) return parsed.reason;
-        const res = await fetch(`${parsed.url}/health`).catch(() => undefined);
-        const body = res && res.ok ? await res.json().catch(() => undefined) : undefined;
-        if (!body?.ok) return `Could not reach a Nod backend at ${parsed.url}. Nothing was changed.`;
+        const check = await inspectServer(parsed.url);
+        if (!check.ok) return `${check.reason} Nothing was changed.`;
         url = parsed.url;
       }
       await changeServer(url);

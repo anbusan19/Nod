@@ -1,15 +1,15 @@
 {
-  "name": "nod-backend",
-  "version": "0.1.0",
-  "private": true,
+  "name": "nod-server",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "tsup src/index.ts --format esm --target node24 --platform node --clean --external firebase-admin --external node:sqlite",
-    "serve": "node dist/index.js"
+    "build": "tsup src/index.ts src/cli.ts --format esm --target node22 --platform node --clean --external firebase-admin --external node:sqlite",
+    "serve": "node dist/index.js",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.1",
@@ -25,6 +25,19 @@
     "tsup": "^8.5.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "yaml": "^2.9.1"
+  },
+  "description": "The Nod backend: routes AI-agent transaction proposals to a person's phone for approval. Run your own with npx nod-server.",
+  "license": "MIT",
+  "bin": {
+    "nod-server": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.5"
   }
 }

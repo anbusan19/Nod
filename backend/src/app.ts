@@ -4,7 +4,7 @@ import rateLimit from "@fastify/rate-limit";
 import { Connection, VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
 import type { DB } from "./db/index.js";
-import { config } from "./config.js";
+import { API_VERSION, config } from "./config.js";
 import { evaluate, type Policy } from "./policy/engine.js";
 import { inspectTransaction } from "./solana/inspect.js";
 import type { PushSender } from "./push/sender.js";
@@ -72,6 +72,13 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     }
   });
 
+  // Every route is recorded so a test can check the published spec (openapi.yaml) matches the code.
+  const routes: string[] = [];
+  app.addHook("onRoute", (r) => {
+    for (const m of [r.method].flat()) if (m !== "HEAD" && m !== "OPTIONS") routes.push(`${m} ${r.url}`);
+  });
+  app.decorate("nodRoutes", routes);
+
   // Invalid request bodies are the caller's fault: answer 400 with the reason, not a 500.
   app.setErrorHandler((err: any, _req, reply) => {
     if (err instanceof z.ZodError) {
@@ -116,7 +123,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
   // Routes live in their own plugin so the rate limiter's per-route hooks are installed before they register.
   app.register(async (app) => {
   // ---- health -------------------------------------------------------------
-  app.get("/health", async () => ({ ok: true, cluster: config.cluster }));
+  app.get("/health", async () => ({ ok: true, service: "nod", apiVersion: API_VERSION, cluster: config.cluster }));
 
   // ---- devices ------------------------------------------------------------
   app.post("/v1/devices", { config: { rateLimit: { max: 20, timeWindow: "1 minute", keyGenerator: (r: FastifyRequest) => `ip:${r.ip}` } } }, async (req) => {
@@ -351,14 +358,16 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
   // Both agent (poll) and device (fetch) read a proposal through this route.
   app.get("/v1/proposals/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const p = loadFor(id);
-    if (!p) return reply.code(404).send({ error: "not found" });
-
+    // Who is asking comes first, so an unknown caller learns nothing about which ids exist.
     const tok = bearer(req);
-    const agent = tok ? (db.prepare("SELECT id FROM agents WHERE key_hash = ?").get(hashSecret(tok)) as any) : undefined;
+    const agent = tok ? (db.prepare("SELECT id FROM agents WHERE key_hash = ? AND revoked = 0").get(hashSecret(tok)) as any) : undefined;
     const device = tok ? (db.prepare("SELECT id FROM devices WHERE token_hash = ?").get(hashSecret(tok)) as any) : undefined;
-    const allowed = (agent && agent.id === p.agent_id) || (device && deviceCanSee(device.id, p.agent_id));
-    if (!allowed) return reply.code(401).send({ error: "unauthorized" });
+    if (!agent && !device) return reply.code(401).send({ error: "invalid credentials" });
+
+    const p = loadFor(id);
+    const allowed = p && ((agent && agent.id === p.agent_id) || (device && deviceCanSee(device.id, p.agent_id)));
+    // Someone else's proposal looks exactly like one that does not exist.
+    if (!p || !allowed) return reply.code(404).send({ error: "not found" });
     return publicProposal(p);
   });
 

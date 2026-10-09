@@ -16,3 +16,29 @@ export function parseServerUrl(input: string, opts: { allowInsecure: boolean }):
   if (u.username || u.password) return { ok: false, reason: "Do not put a username or password in the address." };
   return { ok: true, url: `${u.protocol}//${u.host}${u.pathname.replace(/\/+$/, "")}` };
 }
+
+/** The Nod HTTP API version this app speaks (see docs/openapi.yaml). */
+export const SUPPORTED_API_VERSION = 1;
+
+export type ServerCheck = { ok: true; apiVersion: number; cluster: string } | { ok: false; reason: string };
+
+/** Asks a server who it is. Never throws; returns a reason the user can act on. */
+export async function inspectServer(url: string, fetchImpl: typeof fetch = fetch): Promise<ServerCheck> {
+  let res: Response | undefined;
+  try {
+    res = await fetchImpl(`${url}/health`);
+  } catch {
+    return { ok: false, reason: `Could not reach ${url}. Check the address and that the server is running.` };
+  }
+  const body: any = res.ok ? await res.json().catch(() => undefined) : undefined;
+  if (!body || body.ok !== true || body.service !== "nod" || typeof body.apiVersion !== "number") {
+    return { ok: false, reason: `${url} is not a Nod backend. Check the address.` };
+  }
+  if (body.apiVersion > SUPPORTED_API_VERSION) {
+    return { ok: false, reason: "This server is newer than this app. Update the Nod app." };
+  }
+  if (body.apiVersion < SUPPORTED_API_VERSION) {
+    return { ok: false, reason: "This server is older than this app supports. Upgrade the server." };
+  }
+  return { ok: true, apiVersion: body.apiVersion, cluster: String(body.cluster ?? "") };
+}

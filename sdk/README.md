@@ -86,6 +86,7 @@ Rejection, expiry and blocks are **normal outcomes**, so they are returned, not 
 | Method | |
 |---|---|
 | `Nod.pair(apiUrl, code, name)` | Redeem a pairing code. Returns `{ agentId, apiKey }` once. |
+| `Nod.checkServer(apiUrl)` | Confirm an address is a compatible Nod backend. Throws a clear error if not. `Nod.pair` does this for you. |
 | `nod.me()` | This agent's `name`, `frozen`, and the user's `policy` limits. Check limits before proposing. |
 | `nod.propose(input)` | Submit a transaction. Returns the new `Proposal`. |
 | `nod.proposeAndWait(input, opts?)` | Propose, then wait for a final outcome. |
@@ -179,7 +180,7 @@ Tell the model plainly that a rejection is a decision, not an error to work arou
 
 ## Plain HTTP
 
-Everything the SDK does is a small JSON API. Authenticate with `Authorization: Bearer <agent key>`.
+Everything the SDK does is a small JSON API, fully specified in `docs/API.md` and `docs/openapi.yaml`. Authenticate with `Authorization: Bearer <agent key>`.
 
 ```bash
 # Pair (no auth). The code comes from the Nod app.

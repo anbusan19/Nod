@@ -1,0 +1,554 @@
+openapi: 3.0.3
+info:
+  title: Nod backend API
+  version: "1"
+  description: |
+    The contract between a Nod backend, the Nod phone app, and AI agents (through the `nod-sdk` package).
+    Anything that implements this can stand in for the reference backend in `backend/`.
+    Read docs/API.md for the behaviour a backend must preserve; this file defines shapes only.
+
+    `GET /health` reports `apiVersion`. Clients refuse a server whose major version they do not support.
+    Additive changes (new optional fields, new endpoints) do not change the version.
+servers:
+  - url: https://your-nod-backend.example.com
+tags:
+  - name: Server
+  - name: Agent
+    description: Called by an AI agent with its API key.
+  - name: Device
+    description: Called by the Nod phone app with its device token.
+  - name: Shared
+    description: Callable by either an agent (its own proposals) or a device.
+
+paths:
+  /health:
+    get:
+      tags: [Server]
+      summary: Identify the server and its API version
+      security: []
+      responses:
+        "200":
+          description: A Nod backend
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, service, apiVersion, cluster]
+                properties:
+                  ok: { type: boolean, enum: [true] }
+                  service: { type: string, enum: [nod] }
+                  apiVersion: { type: integer, example: 1 }
+                  cluster: { $ref: "#/components/schemas/Cluster", description: "The cluster agents propose for by default" }
+
+  /v1/devices:
+    post:
+      tags: [Device]
+      summary: Register a phone
+      description: Called once per install. The returned token is shown only here and identifies the phone from then on.
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wallet: { type: string, description: "The user's wallet address (base58)" }
+                fcmToken: { type: string, description: "Firebase Cloud Messaging token for push" }
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deviceId, deviceToken]
+                properties:
+                  deviceId: { type: string }
+                  deviceToken: { type: string, description: "Send as `Authorization: Bearer <token>`" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/devices/me:
+    patch:
+      tags: [Device]
+      summary: Update this phone's wallet address or push token
+      security: [{ deviceToken: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wallet: { type: string }
+                fcmToken: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/pairings:
+    post:
+      tags: [Device]
+      summary: Create a pairing code for a new agent
+      description: The code is shown in the app, lasts 5 minutes, and works once.
+      security: [{ deviceToken: [] }]
+      responses:
+        "200":
+          description: A pairing code
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, expiresAt]
+                properties:
+                  code: { type: string, example: 40AD6458 }
+                  expiresAt: { type: integer, description: "Unix time in milliseconds" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/pairings/redeem:
+    post:
+      tags: [Agent]
+      summary: Exchange a pairing code for an agent API key
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              properties:
+                code: { type: string }
+                name: { type: string, minLength: 1, maxLength: 60 }
+      responses:
+        "200":
+          description: The agent was created. The key is shown only here.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [agentId, apiKey]
+                properties:
+                  agentId: { type: string }
+                  apiKey: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/agents:
+    get:
+      tags: [Device]
+      summary: Agents paired with this phone (revoked ones are not listed)
+      security: [{ deviceToken: [] }]
+      responses:
+        "200":
+          description: Agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AgentSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/agents/{id}/freeze:
+    post:
+      tags: [Device]
+      summary: Freeze or unfreeze an agent
+      description: While frozen, every proposal from the agent is blocked.
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/AgentId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [frozen]
+              properties:
+                frozen: { type: boolean }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, frozen]
+                properties:
+                  ok: { type: boolean }
+                  frozen: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/agents/{id}/policy:
+    put:
+      tags: [Device]
+      summary: Replace an agent's limits
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/AgentId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Policy" }
+      responses:
+        "200":
+          description: The stored policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Policy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/agents/{id}:
+    delete:
+      tags: [Device]
+      summary: Revoke an agent for good
+      description: Its key stops working immediately and any proposal it still has waiting is rejected. Past activity stays in the feed.
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/AgentId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/agents/{id}/rotate-key:
+    post:
+      tags: [Device]
+      summary: Issue a new agent key
+      description: The old key stops working immediately. The new key is shown only here.
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/AgentId" }]
+      responses:
+        "200":
+          description: The new key
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [apiKey]
+                properties:
+                  apiKey: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/agent/me:
+    get:
+      tags: [Agent]
+      summary: This agent's name, frozen state and limits
+      security: [{ agentKey: [] }]
+      responses:
+        "200":
+          description: The agent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentInfo" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/agent/proposals:
+    get:
+      tags: [Agent]
+      summary: This agent's recent proposals, newest first
+      security: [{ agentKey: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        "200":
+          description: Proposals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Proposal" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/proposals:
+    post:
+      tags: [Agent]
+      summary: Propose a transaction for the user's approval
+      description: |
+        The transaction must be unsigned, with the user's wallet as fee payer. The backend inspects it and
+        applies the agent's policy: it is blocked, or sent to the user's phone for approval.
+        Send an `Idempotency-Key` (or `idempotencyKey` in the body) so a retry returns the original proposal.
+      security: [{ agentKey: [] }]
+      parameters:
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 1, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [transaction]
+              properties:
+                transaction: { type: string, minLength: 1, description: "The unsigned transaction as base64" }
+                reason: { type: string, maxLength: 280, default: "", description: "Shown to the user as \"agent says\". Never trusted." }
+                intent: { $ref: "#/components/schemas/Intent" }
+                cluster: { $ref: "#/components/schemas/Cluster" }
+                idempotencyKey: { type: string, minLength: 1, maxLength: 128 }
+      responses:
+        "201":
+          description: A new proposal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProposalWithNote" }
+        "200":
+          description: A proposal with this idempotency key already existed. It is returned unchanged, with the response header `idempotent-replay true`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Proposal" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    get:
+      tags: [Device]
+      summary: Proposals for this phone's agents, newest first (up to 100)
+      security: [{ deviceToken: [] }]
+      responses:
+        "200":
+          description: Proposals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/Proposal"
+                    - type: object
+                      required: [agentName]
+                      properties:
+                        agentName: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/proposals/{id}:
+    get:
+      tags: [Shared]
+      summary: One proposal
+      description: Readable by the agent that made it, or by a phone that agent is paired with. A proposal past its expiry is reported as `expired`.
+      security: [{ agentKey: [] }, { deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ProposalId" }]
+      responses:
+        "200":
+          description: The proposal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Proposal" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/proposals/{id}/reject:
+    post:
+      tags: [Device]
+      summary: The user rejects a proposal
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ProposalId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/proposals/{id}/refresh:
+    post:
+      tags: [Device]
+      summary: Attach a fresh blockhash to a proposal that is still waiting
+      description: |
+        A blockhash lives only about 36 seconds on devnet, far less than a human decision takes. Just before
+        signing, the phone asks for a fresh one. **Only `recentBlockhash` may change**; instructions, accounts
+        and fee payer must be identical. The new `txHash` replaces the old one. The transaction must be unsigned.
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ProposalId" }]
+      responses:
+        "200":
+          description: The proposal with the refreshed transaction and hash
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Proposal" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/proposals/{id}/result:
+    post:
+      tags: [Device]
+      summary: The phone reports progress or the final outcome
+      description: |
+        `txHash` must equal the proposal's current `txHash`, or the request is refused with 409. This is how
+        the backend learns that the phone signed exactly the transaction it was holding.
+      security: [{ deviceToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ProposalId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, txHash]
+              properties:
+                status: { type: string, enum: [approved, submitted, confirmed, failed] }
+                txHash: { type: string }
+                signature: { type: string, description: "The on-chain signature, once known" }
+                error: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+components:
+  securitySchemes:
+    agentKey:
+      type: http
+      scheme: bearer
+      description: An agent API key from pairing (`nodk_…`).
+    deviceToken:
+      type: http
+      scheme: bearer
+      description: A device token from `POST /v1/devices` (`nodd_…`).
+
+  parameters:
+    AgentId: { name: id, in: path, required: true, schema: { type: string } }
+    ProposalId: { name: id, in: path, required: true, schema: { type: string } }
+
+  responses:
+    Ok:
+      description: Done
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ok]
+            properties:
+              ok: { type: boolean, enum: [true] }
+    BadRequest:
+      description: The request was invalid. `issues` lists each problem when validation failed.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+              issues: { type: array, items: { type: string } }
+    Unauthorized:
+      description: Missing, wrong, revoked or rotated credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No such resource, or not yours
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: The proposal is not in a state that allows this, or the hash did not match
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error, retryAfter]
+            properties:
+              statusCode: { type: integer, enum: [429] }
+              error: { type: string }
+              retryAfter: { type: integer, description: "Seconds to wait" }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    Cluster:
+      type: string
+      enum: [devnet, mainnet-beta]
+
+    ProposalStatus:
+      type: string
+      description: |
+        awaiting_human: waiting for the user. approved, submitted: the user approved and it is on its way.
+        confirmed, failed: final outcome on-chain. rejected, expired: the user said no or nobody decided in time.
+        blocked: refused automatically (see blockReason). auto_approved: within the user's auto limit.
+        Final states: auto_approved, rejected, expired, blocked, confirmed, failed.
+      enum: [awaiting_human, auto_approved, approved, rejected, expired, blocked, submitted, confirmed, failed]
+
+    Intent:
+      type: object
+      description: What the agent claims the transaction does. The phone checks it against the real transaction.
+      properties:
+        sol: { type: number, exclusiveMinimum: 0, description: "Total SOL sent" }
+        recipient: { type: string, maxLength: 64, description: "The single receiving address" }
+        swap:
+          type: object
+          required: [inputMint, outputMint]
+          properties:
+            inputMint: { type: string, maxLength: 64 }
+            outputMint: { type: string, maxLength: 64 }
+            inAmount: { type: string, pattern: "^\\d+$", description: "Raw units paid (exact-in)" }
+            minOut: { type: string, pattern: "^\\d+$", description: "The least the agent accepts to receive, raw units" }
+
+    Policy:
+      type: object
+      required: [autoLimitLamports, hardCapLamports, dailyCapLamports, allowedRecipients, allowedPrograms, allowUnknownPrograms]
+      properties:
+        autoLimitLamports: { type: integer, minimum: 0 }
+        hardCapLamports: { type: integer, minimum: 0 }
+        dailyCapLamports: { type: integer, minimum: 0 }
+        allowedRecipients: { type: array, items: { type: string } }
+        allowedPrograms: { type: array, items: { type: string } }
+        allowUnknownPrograms: { type: boolean }
+
+    AgentInfo:
+      type: object
+      required: [agentId, name, frozen, policy]
+      properties:
+        agentId: { type: string }
+        name: { type: string }
+        frozen: { type: boolean }
+        policy: { $ref: "#/components/schemas/Policy" }
+
+    AgentSummary:
+      type: object
+      required: [id, name, frozen, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        frozen: { type: boolean }
+        createdAt: { type: integer, description: "Unix milliseconds" }
+        policy: { $ref: "#/components/schemas/Policy" }
+
+    Proposal:
+      type: object
+      required: [id, agentId, transaction, txHash, reason, tier, status, blockReason, intent, cluster, signature, error, createdAt, expiresAt]
+      properties:
+        id: { type: string }
+        agentId: { type: string }
+        transaction: { type: string, description: "The transaction as base64" }
+        txHash: { type: string, description: "Lowercase hex SHA-256 of the transaction's raw bytes. Changes only when `refresh` swaps the blockhash." }
+        reason: { type: string }
+        tier:
+          type: string
+          enum: [auto, nod, council, block]
+        status: { $ref: "#/components/schemas/ProposalStatus" }
+        blockReason: { type: string, nullable: true }
+        intent:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Intent"
+        cluster: { $ref: "#/components/schemas/Cluster" }
+        signature: { type: string, nullable: true }
+        error: { type: string, nullable: true }
+        createdAt: { type: integer, description: "Unix milliseconds" }
+        expiresAt: { type: integer, description: "Unix milliseconds. After this a waiting proposal reads as `expired`." }
+
+    ProposalWithNote:
+      allOf:
+        - $ref: "#/components/schemas/Proposal"
+        - type: object
+          properties:
+            policyNote: { type: string, description: "Why the policy chose this tier" }

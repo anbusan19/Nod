@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Image, ScrollView, TextInput, View } from "react-native";
-import { parseServerUrl } from "../api/server";
+import { inspectServer, parseServerUrl } from "../api/server";
 import { Button, Card, T } from "../components/ui";
 import { useApp } from "../state";
 import { useColors } from "../theme/colors";
@@ -20,10 +20,9 @@ export function ConnectServer() {
     if (!parsed.ok) return setMessage(parsed.reason);
     setBusy(true);
     try {
-      const res = await fetch(`${parsed.url}/health`).catch(() => undefined);
-      const body = res && res.ok ? await res.json().catch(() => undefined) : undefined;
-      if (!body?.ok) {
-        setMessage(`Could not reach a Nod backend at ${parsed.url}. Check the address and that the server is running.`);
+      const check = await inspectServer(parsed.url);
+      if (!check.ok) {
+        setMessage(check.reason);
         return;
       }
       await changeServer(parsed.url);

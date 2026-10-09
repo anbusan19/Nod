@@ -1,3 +1,9 @@
+/**
+ * Version of the HTTP API in docs/API.md and openapi.yaml. Bump it for any change an older app or SDK
+ * could not cope with; additive changes (new optional fields, new endpoints) do not need a bump.
+ */
+export const API_VERSION = 1;
+
 const num = (v: string | undefined, d: number) => (v !== undefined && v !== "" ? Number(v) : d);
 
 export const config = {

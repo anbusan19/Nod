@@ -14,6 +14,15 @@ export interface NodOptions {
   retries?: number;
 }
 
+/** The version of the Nod HTTP API this SDK speaks (see docs/openapi.yaml). */
+export const SUPPORTED_API_VERSION = 1;
+
+export interface ServerInfo {
+  apiVersion: number;
+  /** The cluster agents propose for by default on this server. */
+  cluster: "devnet" | "mainnet-beta";
+}
+
 /** Statuses after which a proposal will not change. */
 const FINAL: ReadonlySet<ProposalStatus> = new Set(["rejected", "expired", "blocked", "confirmed", "failed", "auto_approved"]);
 
@@ -67,12 +76,44 @@ export class Nod {
   }
 
   /**
+   * Check that `apiUrl` is a Nod backend that speaks an API version this SDK understands.
+   * Throws a NodError that says what is wrong: unreachable, not Nod, or too old / too new.
+   */
+  static async checkServer(apiUrl: string, opts: { fetch?: typeof fetch } = {}): Promise<ServerInfo> {
+    const f = opts.fetch ?? globalThis.fetch;
+    const base = apiUrl.replace(/\/+$/, "");
+    let res: Response;
+    try {
+      res = await f(`${base}/health`);
+    } catch (e) {
+      throw new NodNetworkError(`Could not reach ${base}`, e);
+    }
+    const body: any = res.ok ? await res.json().catch(() => undefined) : undefined;
+    if (!body || body.ok !== true || body.service !== "nod" || typeof body.apiVersion !== "number") {
+      throw new NodError(`${base} does not look like a Nod backend (its /health did not identify one).`);
+    }
+    if (body.apiVersion > SUPPORTED_API_VERSION) {
+      throw new NodError(`This server speaks Nod API v${body.apiVersion}, but this SDK only supports v${SUPPORTED_API_VERSION}. Update nod-sdk.`);
+    }
+    if (body.apiVersion < SUPPORTED_API_VERSION) {
+      throw new NodError(`This server speaks Nod API v${body.apiVersion}, which is older than this SDK supports (v${SUPPORTED_API_VERSION}). Upgrade the server.`);
+    }
+    return { apiVersion: body.apiVersion, cluster: body.cluster };
+  }
+
+  /** Same as `Nod.checkServer`, for the server this client is configured with. */
+  check(): Promise<ServerInfo> {
+    return Nod.checkServer(this.base, { fetch: this.f });
+  }
+
+  /**
    * Redeem the pairing code shown in the Nod app and get this agent's API key.
    * The key is returned once and the code stops working, so store the key safely.
    */
   static async pair(apiUrl: string, code: string, name: string, opts: { fetch?: typeof fetch } = {}): Promise<{ agentId: string; apiKey: string }> {
     const f = opts.fetch ?? globalThis.fetch;
     const base = apiUrl.replace(/\/+$/, "");
+    await Nod.checkServer(base, { fetch: f }); // a clear error for a typo'd address or an incompatible server
     let res: Response;
     try {
       res = await f(`${base}/v1/pairings/redeem`, {

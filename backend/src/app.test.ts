@@ -122,6 +122,23 @@ describe("api", () => {
     expect((await json("GET", `/v1/proposals/${p.id}`, dev.deviceToken)).body.status).toBe("rejected");
   });
 
+  it("treats someone else's proposal exactly like a missing one", async () => {
+    const a = await setup();
+    const b = await setup();
+    const mine = (await json("POST", "/v1/proposals", a.agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;
+    expect((await json("GET", `/v1/proposals/${mine.id}`, a.agent.apiKey)).status).toBe(200);
+    expect((await json("GET", `/v1/proposals/${mine.id}`, a.dev.deviceToken)).status).toBe(200);
+    // another agent and another phone: 404, the same answer as for an id that does not exist
+    const otherAgent = await json("GET", `/v1/proposals/${mine.id}`, b.agent.apiKey);
+    const otherPhone = await json("GET", `/v1/proposals/${mine.id}`, b.dev.deviceToken);
+    const missing = await json("GET", "/v1/proposals/does-not-exist", b.agent.apiKey);
+    expect([otherAgent.status, otherPhone.status, missing.status]).toEqual([404, 404, 404]);
+    expect(otherAgent.body).toEqual(missing.body);
+    // no credentials at all: 401 whether or not the id exists, so ids cannot be probed
+    expect((await json("GET", `/v1/proposals/${mine.id}`)).status).toBe(401);
+    expect((await json("GET", "/v1/proposals/does-not-exist")).status).toBe(401);
+  });
+
   it("rotating a key invalidates the old one", async () => {
     const { dev, agent } = await setup();
     const r = await json("POST", `/v1/agents/${agent.agentId}/rotate-key`, dev.deviceToken);

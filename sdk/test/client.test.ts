@@ -132,14 +132,43 @@ describe("waiting for a decision", () => {
   });
 });
 
+const health = (over: object = {}) => reply(200, { ok: true, service: "nod", apiVersion: 1, cluster: "devnet", ...over });
+const serving = (handlers: Record<string, () => Response>) => vi.fn(async (url: string) => handlers[new URL(url).pathname]?.() ?? reply(404, { error: "nope" }));
+
 describe("pairing", () => {
   it("returns the agent id and key", async () => {
-    const f = vi.fn(async () => reply(200, { agentId: "a1", apiKey: "nodk_abc" }));
+    const f = serving({ "/health": () => health(), "/v1/pairings/redeem": () => reply(200, { agentId: "a1", apiKey: "nodk_abc" }) });
     expect(await Nod.pair("https://nod.test", " 40AD6458 ", "bot", { fetch: f as any })).toEqual({ agentId: "a1", apiKey: "nodk_abc" });
-    expect(JSON.parse((f.mock.calls[0] as any)[1].body)).toEqual({ code: "40AD6458", name: "bot" });
+    const redeem = f.mock.calls.find((c) => String(c[0]).endsWith("/redeem")) as any;
+    expect(JSON.parse(redeem[1].body)).toEqual({ code: "40AD6458", name: "bot" });
   });
   it("reports a bad code", async () => {
-    const f = vi.fn(async () => reply(400, { error: "invalid or expired code" }));
+    const f = serving({ "/health": () => health(), "/v1/pairings/redeem": () => reply(400, { error: "invalid or expired code" }) });
     await expect(Nod.pair("https://nod.test", "x", "bot", { fetch: f as any })).rejects.toThrow("invalid or expired code");
+  });
+});
+
+describe("checkServer", () => {
+  const check = (h: Response | Error) => Nod.checkServer("https://nod.test/", { fetch: (async () => { if (h instanceof Error) throw h; return h; }) as any });
+
+  it("accepts a compatible Nod backend", async () => {
+    expect(await check(health({ cluster: "mainnet-beta" }))).toEqual({ apiVersion: 1, cluster: "mainnet-beta" });
+  });
+  it("says so when the address is not a Nod backend", async () => {
+    await expect(check(reply(200, { hello: "world" }))).rejects.toThrow(/does not look like a Nod backend/);
+    await expect(check(reply(200, { ok: true, cluster: "devnet" }))).rejects.toThrow(/does not look like a Nod backend/); // an old or foreign server without `service`
+    await expect(check(reply(404, { error: "not found" }))).rejects.toThrow(/does not look like a Nod backend/);
+  });
+  it("tells you which side to update when versions differ", async () => {
+    await expect(check(health({ apiVersion: 2 }))).rejects.toThrow(/Update nod-sdk/);
+    await expect(check(health({ apiVersion: 0 }))).rejects.toThrow(/Upgrade the server/);
+  });
+  it("reports an unreachable server", async () => {
+    await expect(check(new TypeError("fetch failed"))).rejects.toBeInstanceOf(NodNetworkError);
+  });
+  it("pair refuses an incompatible server before sending the code", async () => {
+    const f = serving({ "/health": () => health({ apiVersion: 9 }) });
+    await expect(Nod.pair("https://nod.test", "CODE", "bot", { fetch: f as any })).rejects.toThrow(/Update nod-sdk/);
+    expect(f.mock.calls.some((c) => String(c[0]).includes("redeem"))).toBe(false);
   });
 });

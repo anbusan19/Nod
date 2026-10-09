@@ -518,7 +518,7 @@ const result = await nod.proposeAndWait({ ...built, reason: "Weather API credits
 if (isConfirmed(result)) console.log("paid", result.signature);
 ```
 
-The SDK covers pairing, proposing, waiting for the decision, retries and idempotency, typed errors, a CLI, and transaction helpers for transfers and Jupiter swaps. Full reference: [`sdk/README.md`](sdk/README.md). It also documents the plain HTTP API for agents not written in JavaScript.
+The SDK covers pairing, proposing, waiting for the decision, retries and idempotency, typed errors, a CLI, and transaction helpers for transfers and Jupiter swaps. Full reference: [`sdk/README.md`](sdk/README.md). The HTTP contract is specified in [`docs/API.md`](docs/API.md) and [`docs/openapi.yaml`](docs/openapi.yaml), so you can also write your own agent client, or even your own backend, and verify it with the conformance suite (`NOD_CONFORMANCE_URL=… npm run conformance -w sdk`).
 
 ## Running the demo agent
 

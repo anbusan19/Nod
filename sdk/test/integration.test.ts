@@ -1,4 +1,11 @@
-// Runs the real SDK against the real backend app, in-process, so the two cannot drift apart.
+// Runs the real SDK against a Nod backend so the two cannot drift apart.
+//
+//   npm test                                            runs against the reference backend, in-process
+//   NOD_CONFORMANCE_URL=https://your-backend npm run conformance   runs the same checks against ANY backend
+//
+// That second form is the conformance suite for people writing their own backend. It creates a device,
+// an agent and some proposals on the server it is pointed at, so use a test server. It assumes the
+// reference defaults (a proposal of 1000 SOL exceeds the agent's hard cap).
 import { Keypair } from "@solana/web3.js";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../../backend/src/app.js";
@@ -9,14 +16,27 @@ import { transferSol } from "../src/solana.js";
 
 const app = buildApp({ db: openDb(":memory:"), push: new LogPushSender(), getBlockhash: async () => "11111111111111111111111111111111" });
 
+const REMOTE = process.env.NOD_CONFORMANCE_URL?.replace(/\/+$/, "");
+const BASE = REMOTE ?? "http://nod.local";
+
 /** Lets the SDK call the in-process backend as if it were over the network. */
-const viaApp: typeof fetch = async (input, init) => {
+const inProcess: typeof fetch = async (input, init) => {
   const u = new URL(String(input));
   const res = await app.inject({ method: (init?.method ?? "GET") as any, url: u.pathname + u.search, headers: init?.headers as any, payload: init?.body as any });
   return new Response(res.body, { status: res.statusCode, headers: Object.fromEntries(Object.entries(res.headers).map(([k, v]) => [k, String(v)])) });
 };
 
+const viaApp: typeof fetch = REMOTE ? fetch : inProcess;
+
 const api = async (method: string, path: string, token?: string, body?: unknown) => {
+  if (REMOTE) {
+    const res = await fetch(`${REMOTE}${path}`, {
+      method,
+      headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    return res.json() as any;
+  }
   const r = await app.inject({ method: method as any, url: path, headers: token ? { authorization: `Bearer ${token}` } : {}, payload: body as any });
   return r.json() as any;
 };
@@ -30,9 +50,9 @@ let agentId: string;
 beforeAll(async () => {
   device = await api("POST", "/v1/devices", undefined, {});
   const { code } = await api("POST", "/v1/pairings", device.deviceToken);
-  const paired = await Nod.pair("http://nod.local", code, "integration-bot", { fetch: viaApp });
+  const paired = await Nod.pair(BASE, code, "integration-bot", { fetch: viaApp });
   agentId = paired.agentId;
-  nod = new Nod({ apiUrl: "http://nod.local", agentKey: paired.apiKey, fetch: viaApp });
+  nod = new Nod({ apiUrl: BASE, agentKey: paired.apiKey, fetch: viaApp });
 });
 
 describe("SDK against the real backend", () => {
