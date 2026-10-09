@@ -166,7 +166,7 @@ export function Agents() {
       <T size={24} weight="bold">Agents</T>
       <Card style={{ gap: 10 }}>
         <T weight="semibold">Pair a new agent</T>
-        <T size={13} muted>Generate a code, then run `npx nod-sdk pair CODE --api <your server>` where your agent runs.</T>
+        <T size={13} muted>{"Generate a code, then run `npx nod-sdk pair CODE --api <your server>` where your agent runs."}</T>
         {pairing && <Mono size={28} medium selectable>{pairing.code}</Mono>}
         {pairing && <T size={12} muted>Expires in 5 minutes.</T>}
         {error && <T size={13} style={{ color: c.danger }}>{error}</T>}
