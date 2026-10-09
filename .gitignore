@@ -15,3 +15,5 @@ app/android/
 app/ios/
 .DS_Store
 *.log
+*.db-shm
+*.db-wal
