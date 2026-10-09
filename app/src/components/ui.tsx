@@ -84,13 +84,14 @@ export function Checkbox({ label, hint, checked, disabled, onChange }: { label: 
   );
 }
 
-export function Badge({ label, tone }: { label: string; tone: "danger" | "warn" | "ok" | "neutral" }) {
+export function Badge({ label, tone }: { label: string; tone: "danger" | "warn" | "ok" | "neutral" | "accent" }) {
   const c = useColors();
   const map = {
     danger: [c.dangerBg, c.danger],
     warn: [c.warnBg, c.warn],
     ok: [c.okBg, c.ok],
     neutral: [c.border, c.muted],
+    accent: [c.primary, c.onPrimary], // the lavender used on buttons
   } as const;
   const [bg, fg] = map[tone];
   return (

@@ -2,6 +2,7 @@ import "./src/polyfills";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
 import { ActivityIndicator, BackHandler, Pressable, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { T } from "./src/components/ui";
@@ -18,6 +19,13 @@ import { fontAssets } from "./src/theme/fonts";
 
 const TABS = ["Approvals", "Activity", "Agents", "Settings"] as const;
 type Tab = (typeof TABS)[number];
+
+const TAB_ICONS: Record<Tab, React.ComponentProps<typeof Feather>["name"]> = {
+  Approvals: "check-circle",
+  Activity: "activity",
+  Agents: "cpu",
+  Settings: "settings",
+};
 
 function Shell() {
   const c = useColors();
@@ -59,13 +67,30 @@ function Shell() {
         {tab === "Settings" && <Settings />}
       </View>
       <View style={{ flexDirection: "row", borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.card }}>
-        {TABS.map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={{ flex: 1, paddingVertical: 14, alignItems: "center" }}>
-            <T size={13} weight={tab === t ? "bold" : "regular"} style={{ color: tab === t ? c.accentText : c.muted }}>
-              {t}{t === "Approvals" && pending > 0 ? ` (${pending})` : ""}
-            </T>
-          </Pressable>
-        ))}
+        {TABS.map((t) => {
+          const selected = tab === t;
+          const count = t === "Approvals" ? pending : 0;
+          return (
+            <Pressable
+              key={t}
+              accessibilityRole="tab"
+              accessibilityLabel={count > 0 ? `${t}, ${count} waiting` : t}
+              accessibilityState={{ selected }}
+              onPress={() => setTab(t)}
+              style={{ flex: 1, paddingTop: 8, paddingBottom: 10, alignItems: "center", gap: 3 }}
+            >
+              <View style={{ width: 58, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: selected ? `${c.primary}33` : "transparent" }}>
+                <Feather name={TAB_ICONS[t]} size={21} color={selected ? c.accentText : c.muted} />
+                {count > 0 && (
+                  <View style={{ position: "absolute", top: -2, right: 4, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, alignItems: "center", justifyContent: "center", backgroundColor: c.primary }}>
+                    <T size={10} weight="bold" style={{ color: c.onPrimary }}>{count > 9 ? "9+" : String(count)}</T>
+                  </View>
+                )}
+              </View>
+              <T size={11} weight={selected ? "bold" : "regular"} style={{ color: selected ? c.accentText : c.muted }}>{t}</T>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

@@ -7,7 +7,7 @@ import { fonts } from "../theme/fonts";
 import { Badge, Button, Mono, T } from "./ui";
 
 /**
- * The saved servers. Tap a row to switch to it. Each row has an Edit button that opens Rename and Delete, and a
+ * The saved servers. Tap a row to switch to it. Each row has an edit (pencil) button that opens Rename and Delete, and a
  * Test connection button until the server has been verified.
  */
 export function ServerList({
@@ -61,7 +61,7 @@ export function ServerList({
               >
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <T weight="semibold" style={{ flexShrink: 1 }} numberOfLines={1}>{s.name}</T>
-                  {inUse && <Badge label="✓ In use" tone="ok" />}
+                  {inUse && <Badge label="In use" tone="accent" />}
                 </View>
                 <Mono size={12} color={c.muted} numberOfLines={1}>{s.url}</Mono>
               </Pressable>
@@ -70,10 +70,9 @@ export function ServerList({
                 accessibilityLabel={open ? `Close options for ${s.name}` : `Edit ${s.name}`}
                 hitSlop={8}
                 onPress={() => (open ? close() : (setMenu(s.url), setRenaming(false)))}
-                style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 10, backgroundColor: open ? c.border : "transparent" }}
+                style={{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: open ? c.border : "transparent" }}
               >
-                <Feather name={open ? "x" : "edit-2"} size={14} color={c.accentText} />
-                <T size={13} weight="semibold" style={{ color: c.accentText }}>{open ? "Close" : "Edit"}</T>
+                <Feather name={open ? "x" : "edit-2"} size={17} color={c.accentText} />
               </Pressable>
             </View>
 
