@@ -298,7 +298,7 @@ Additional controls: per-agent daily spend cap, allowlist of recipients and prog
 ## Mobile-native features
 
 - **Push notifications** with high priority and a deep link into the approval card
-- **Biometric approval** via the Android system prompt (the app never sees biometric data; the only permission is `USE_BIOMETRIC`)
+- **Biometric approval** via the Android system prompt, with the screen lock (PIN, pattern or password) as a fallback when no biometric is enrolled (the app never sees biometric data; the only permission is `USE_BIOMETRIC`)
 - **Haptic feedback** on approve, reject, and expiring countdown
 - **Lock-screen friendly** notifications with an expiry countdown
 - **Mobile Wallet Adapter** signing with a wallet on the same device

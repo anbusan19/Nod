@@ -200,7 +200,7 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
 
       {actionable && (
         <View style={{ gap: 10 }}>
-          <Button title="Approve with biometrics" onPress={onApprove} loading={busy} disabled={!prepared || prepared.blockers.length > 0} />
+          <Button title="Approve" onPress={onApprove} loading={busy} disabled={!prepared || prepared.blockers.length > 0} />
           <Button title="Reject" kind="danger" onPress={onReject} disabled={busy} />
         </View>
       )}

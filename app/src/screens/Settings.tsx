@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, Card, Mono, T } from "../components/ui";
-import { biometricsAvailable } from "../security/biometric";
+import { getAuthMethod } from "../security/biometric";
 import { registerForPush } from "../push/notifications";
 import { config } from "../config";
 import { useApp } from "../state";
@@ -83,9 +83,16 @@ export function Settings() {
           <T size={13} muted>Backend</T><Mono>{config.apiUrl}</Mono>
         </View>
         <Button
-          title="Check biometrics"
+          title="Check approval method"
           kind="secondary"
-          onPress={() => run(async () => ((await biometricsAvailable()) ? "Biometrics are ready." : "No fingerprint or face enrolled."))}
+          onPress={() =>
+            run(async () => {
+              const m = await getAuthMethod();
+              if (m === "biometric") return "Approvals will use your fingerprint or face.";
+              if (m === "screen-lock") return "No biometrics enrolled. Approvals will ask for your screen lock (PIN, pattern or password).";
+              return "No screen lock set. Set one up in Android settings to approve transactions.";
+            })
+          }
         />
       </Card>
 
