@@ -29,6 +29,16 @@ const LOGO_WIDTH = 34;
 /** Below this width the logo would wrap and wreck the layout, so only the text is shown. */
 const MIN_WIDTH_FOR_LOGO = 78;
 
+/** "NOD" in chunky block letters, two terminal cells per pixel so it is as wide as it is tall. */
+const GLYPHS: Record<string, string[]> = {
+  N: ["#   #", "##  #", "# # #", "#  ##", "#   #"],
+  O: [" ### ", "#   #", "#   #", "#   #", " ### "],
+  D: ["#### ", "#   #", "#   #", "#   #", "#### "],
+};
+const WORDMARK: string[] = Array.from({ length: 5 }, (_, row) =>
+  [..."NOD"].map((ch) => [...GLYPHS[ch][row]].map((px) => (px === "#" ? "██" : "  ")).join("")).join("   ").trimEnd(),
+);
+
 export interface BannerInfo {
   version: string;
   cluster: string;
@@ -58,7 +68,8 @@ export function renderBanner(info: BannerInfo, opts: { color: boolean; columns?:
 
   const urls = [`http://localhost:${info.port}`, ...info.lan.map((a) => `http://${a}:${info.port}`)];
   const text: string[] = [
-    paint(BOLD + LAVENDER, "N O D"),
+    ...(opts.columns === undefined || opts.columns >= 40 ? WORDMARK.map((l) => paint(BOLD + LAVENDER, l)) : [paint(BOLD + LAVENDER, "N O D")]),
+    "",
     paint(DIM, "Nothing moves without your Nod."),
     "",
     `${paint(DIM, "version  ")} ${info.version}`,
