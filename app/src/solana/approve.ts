@@ -1,7 +1,7 @@
 import { PublicKey, type AddressLookupTableAccount, type VersionedTransaction } from "@solana/web3.js";
 import { api, type Proposal } from "../api/client";
 import { confirmWithBiometrics } from "../security/biometric";
-import { connection, fetchLookupTables } from "./connection";
+import { fetchLookupTables } from "./connection";
 import {
   assessRisks,
   decodeTransaction,
@@ -40,9 +40,6 @@ export async function prepare(proposal: Proposal, owner: string, knownRecipients
   if (!decoded.signers.includes(owner)) blockers.push("This transaction is not signed by your connected wallet.");
   if (decoded.signers.length > 1) blockers.push("This transaction needs signatures from other accounts.");
 
-  const blockhashOk = (await connection.isBlockhashValid(decoded.recentBlockhash, { commitment: "confirmed" })).value;
-  if (!blockhashOk) blockers.push("This transaction has expired. Ask the agent to propose it again.");
-
   const simulation = await simulate(tx, new PublicKey(owner), decoded.tokenAccounts);
   if (!simulation.ok) blockers.push(`Simulation failed: ${simulation.error}`);
 
@@ -61,14 +58,23 @@ export async function approve(p: Prepared, owner: string): Promise<ApproveOutcom
   const bio = await confirmWithBiometrics("Approve this transaction");
   if (!bio.ok) return { ok: false, reason: bio.reason };
 
-  const txHash = p.proposal.txHash;
+  let txHash = p.proposal.txHash;
   try {
-    const signed = await signWithWallet(p.tx, owner);
+    // A blockhash lives ~36s on devnet, so take a fresh one now that the user has authenticated.
+    // The instructions must be exactly what was reviewed; only the blockhash may differ.
+    const fresh = await api.refresh(p.proposal.id);
+    assertHashMatches(fresh.transaction, fresh.txHash);
+    const tx = deserialize(fresh.transaction);
+    const same = verifySigned(p.tx, tx, p.tables, { allowBlockhashChange: true });
+    if (!same.ok) throw new Error(`Refreshed transaction differs from the one you reviewed. ${same.reason}`);
+    txHash = fresh.txHash;
+
+    const signed = await signWithWallet(tx, owner);
     // The wallet may add fee instructions, but must not change what the user reviewed.
-    const check = verifySigned(p.tx, signed, p.tables);
+    const check = verifySigned(tx, signed, p.tables);
     if (!check.ok) throw new Error(check.reason);
     await api.result(p.proposal.id, { status: "approved", txHash }).catch(() => {});
-    const signature = await sendAndConfirm(signed, p.decoded.recentBlockhash);
+    const signature = await sendAndConfirm(signed, tx.message.recentBlockhash);
     // The transaction has landed; a failure to tell the backend must not read as a failed payment.
     await api.result(p.proposal.id, { status: "confirmed", txHash, signature }).catch(() => {});
     return { ok: true, signature };

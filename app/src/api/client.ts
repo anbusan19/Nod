@@ -69,6 +69,8 @@ export const api = {
   setPolicy: (id: string, p: Policy) => request<Policy>("PUT", `/v1/agents/${id}/policy`, p),
   proposals: () => request<Proposal[]>("GET", "/v1/proposals"),
   proposal: (id: string) => request<Proposal>("GET", `/v1/proposals/${id}`),
+  /** Attaches a fresh blockhash to an unsigned transaction; instructions are left untouched. */
+  refresh: (id: string) => request<Proposal>("POST", `/v1/proposals/${id}/refresh`),
   reject: (id: string) => request<{ ok: true }>("POST", `/v1/proposals/${id}/reject`),
   result: (id: string, r: { status: "approved" | "submitted" | "confirmed" | "failed"; txHash: string; signature?: string; error?: string }) =>
     request<{ ok: true }>("POST", `/v1/proposals/${id}/result`, r),

@@ -49,6 +49,17 @@ describe("verifySigned", () => {
     expect(r).toEqual({ ok: false, reason: "The wallet changed the fee payer." });
   });
 
+  it("accepts a new blockhash only when the caller allows it (the refresh step)", () => {
+    const refreshed = build([transfer()], owner.publicKey, Keypair.generate().publicKey.toBase58());
+    expect(verifySigned(original, refreshed, [], { allowBlockhashChange: true }).ok).toBe(true);
+    expect(verifySigned(original, refreshed).ok).toBe(false);
+  });
+
+  it("still rejects changed instructions during a refresh", () => {
+    const evil = build([transfer(other, 5)], owner.publicKey, Keypair.generate().publicKey.toBase58());
+    expect(verifySigned(original, evil, [], { allowBlockhashChange: true }).ok).toBe(false);
+  });
+
   it("rejects a changed blockhash", () => {
     const r = verifySigned(original, build([transfer()], owner.publicKey, Keypair.generate().publicKey.toBase58()));
     expect(r).toEqual({ ok: false, reason: "The wallet changed the blockhash." });

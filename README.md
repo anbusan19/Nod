@@ -187,7 +187,7 @@ Everything below is part of the submitted build unless marked **(stretch)**.
 
 - `@solana/web3.js` builds, deserializes, simulates, and submits transactions.
 - Transactions are **versioned transactions (v0)**, which is what Jupiter returns, so address lookup tables are resolved before decoding.
-- `simulateTransaction` is run on the phone with `replaceRecentBlockhash: false` and account-state return enabled, to compute **before/after balance changes** for the user's accounts.
+- `simulateTransaction` is run on the phone with `replaceRecentBlockhash: true` (the reviewed blockhash may already be stale) and account-state return enabled, to compute **before/after balance changes** for the user's accounts.
 - Confirmation uses `confirmTransaction` with the blockhash and `lastValidBlockHeight` so expiry is handled explicitly.
 - A priority fee is set through the Compute Budget program when the backend builds transactions.
 

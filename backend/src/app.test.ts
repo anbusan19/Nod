@@ -1,4 +1,4 @@
-import { Keypair } from "@solana/web3.js";
+import { Keypair, VersionedTransaction } from "@solana/web3.js";
 import { beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "./app.js";
 import { openDb } from "./db/index.js";
@@ -8,6 +8,7 @@ import { transferTx } from "./testutil.js";
 const payer = Keypair.generate();
 const dest = Keypair.generate().publicKey;
 
+const FRESH = Keypair.generate().publicKey.toBase58();
 let t = 1_000_000;
 let push: LogPushSender;
 let app: ReturnType<typeof buildApp>;
@@ -32,10 +33,33 @@ async function setup() {
 beforeEach(() => {
   t = 1_000_000;
   push = new LogPushSender();
-  app = buildApp({ db: openDb(":memory:"), push, now: () => t });
+  app = buildApp({ db: openDb(":memory:"), push, now: () => t, getBlockhash: async () => FRESH });
 });
 
 describe("api", () => {
+  it("refreshes only the blockhash and rebinds the hash", async () => {
+    const { dev, agent } = await setup();
+    const p = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;
+    const r = await json("POST", `/v1/proposals/${p.id}/refresh`, dev.deviceToken);
+    expect(r.status).toBe(200);
+    expect(r.body.txHash).not.toBe(p.txHash);
+    const before = VersionedTransaction.deserialize(Buffer.from(p.transaction, "base64")).message;
+    const after = VersionedTransaction.deserialize(Buffer.from(r.body.transaction, "base64")).message;
+    expect(after.recentBlockhash).toBe(FRESH);
+    expect(Buffer.from(after.compiledInstructions[0].data)).toEqual(Buffer.from(before.compiledInstructions[0].data));
+    expect(after.staticAccountKeys.map(String)).toEqual(before.staticAccountKeys.map(String));
+    // the result endpoint now expects the new hash
+    const ok = await json("POST", `/v1/proposals/${p.id}/result`, dev.deviceToken, { status: "confirmed", signature: "s", txHash: r.body.txHash });
+    expect(ok.status).toBe(200);
+  });
+
+  it("refuses to refresh a transaction that is no longer awaiting a human", async () => {
+    const { dev, agent } = await setup();
+    const p = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;
+    await json("POST", `/v1/proposals/${p.id}/reject`, dev.deviceToken);
+    expect((await json("POST", `/v1/proposals/${p.id}/refresh`, dev.deviceToken)).status).toBe(409);
+  });
+
   it("accepts body-less POSTs sent with a JSON content type", async () => {
     const dev = (await json("POST", "/v1/devices", undefined, {})).body;
     const res = await app.inject({

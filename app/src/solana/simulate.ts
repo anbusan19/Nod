@@ -33,7 +33,8 @@ export async function simulate(
 
   const res = await connection.simulateTransaction(tx, {
     sigVerify: false,
-    replaceRecentBlockhash: false,
+    // Balance changes don't depend on the blockhash, and the reviewed one may already be stale.
+    replaceRecentBlockhash: true,
     commitment: "confirmed",
     accounts: { encoding: "base64", addresses: watched.map((w) => w.toBase58()) },
   });

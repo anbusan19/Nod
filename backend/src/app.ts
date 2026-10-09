@@ -1,5 +1,6 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
+import { Connection, VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
 import type { DB } from "./db/index.js";
 import { config } from "./config.js";
@@ -38,9 +39,13 @@ interface Deps {
   db: DB;
   push: PushSender;
   now?: () => number;
+  /** Source of a fresh recent blockhash. Defaults to the configured RPC node. */
+  getBlockhash?: () => Promise<string>;
 }
 
-export function buildApp({ db, push, now = Date.now }: Deps) {
+const rpcBlockhash = async () => (await new Connection(config.rpcUrl, "confirmed").getLatestBlockhash()).blockhash;
+
+export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash }: Deps) {
   const app = Fastify({ logger: false });
   app.register(cors, { origin: true });
 
@@ -285,6 +290,31 @@ export function buildApp({ db, push, now = Date.now }: Deps) {
     if (p.status !== "awaiting_human") return reply.code(409).send({ error: `proposal is ${p.status}` });
     db.prepare("UPDATE proposals SET status = 'rejected', updated_at = ? WHERE id = ?").run(now(), p.id);
     return { ok: true };
+  });
+
+  // A blockhash lives only ~36s on devnet, far less than a human approval takes. The phone asks for
+  // a fresh one right before signing. Only the blockhash changes, and the phone checks that.
+  app.post("/v1/proposals/:id/refresh", async (req, reply) => {
+    const device = deviceFrom(req, reply);
+    if (!device) return;
+    const p = loadFor((req.params as { id: string }).id);
+    if (!p || !deviceCanSee(device.id, p.agent_id)) return reply.code(404).send({ error: "not found" });
+    if (p.status !== "awaiting_human") return reply.code(409).send({ error: `proposal is ${p.status}` });
+
+    const tx = VersionedTransaction.deserialize(Buffer.from(p.tx_base64, "base64"));
+    if (tx.signatures.some((sig) => sig.some((b) => b !== 0))) {
+      return reply.code(409).send({ error: "transaction already carries signatures and cannot be refreshed" });
+    }
+    tx.message.recentBlockhash = await getBlockhash();
+    const txBase64 = Buffer.from(tx.serialize()).toString("base64");
+    const summary = inspectTransaction(txBase64);
+    db.prepare("UPDATE proposals SET tx_base64 = ?, tx_hash = ?, updated_at = ? WHERE id = ?").run(
+      txBase64,
+      summary.hash,
+      now(),
+      p.id,
+    );
+    return publicProposal(getProposal(db, p.id)!);
   });
 
   app.post("/v1/proposals/:id/result", async (req, reply) => {

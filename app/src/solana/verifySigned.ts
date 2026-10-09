@@ -57,6 +57,7 @@ export function verifySigned(
   original: VersionedTransaction,
   signed: VersionedTransaction,
   tables: AddressLookupTableAccount[] = [],
+  opts: { allowBlockhashChange?: boolean } = {},
 ): VerifyResult {
   try {
     const o = original.message;
@@ -64,7 +65,7 @@ export function verifySigned(
     if (o.staticAccountKeys[0].toBase58() !== s.staticAccountKeys[0].toBase58()) {
       return { ok: false, reason: "The wallet changed the fee payer." };
     }
-    if (o.recentBlockhash !== s.recentBlockhash) {
+    if (!opts.allowBlockhashChange && o.recentBlockhash !== s.recentBlockhash) {
       return { ok: false, reason: "The wallet changed the blockhash." };
     }
 
