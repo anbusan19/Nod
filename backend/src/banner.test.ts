@@ -12,10 +12,10 @@ describe("startup banner", () => {
   });
   it("uses the lavender accent with colour", () => expect(renderBanner(info, { color: true, columns: 100 })).toContain("\x1b[38;2;153;172;255m"));
   it("falls back to a small wordmark on a very narrow terminal", () => expect(renderBanner(info, { color: false, columns: 30 })).toContain("N O D"));
-  it("drops the logo on a narrow terminal", () => {
+  it("drops the logo on a narrow terminal but keeps the wordmark", () => {
     const out = renderBanner(info, { color: false, columns: 60 });
-    expect(out).not.toMatch(/[⠀-⣿]/);
-    expect(out).toContain("N O D");
+    expect(out).not.toMatch(/[\u2800-\u28ff]/);
+    expect(out).toContain("██");
   });
   it("never exceeds 80 columns when the logo is shown", () => {
     for (const line of renderBanner({ ...info, lan: [] }, { color: false, columns: 80 }).split("\n")) expect(line.length).toBeLessThanOrEqual(80);
