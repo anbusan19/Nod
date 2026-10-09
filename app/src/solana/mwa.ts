@@ -7,10 +7,17 @@ import { connectionFor } from "./connection";
 import { kv } from "../storage";
 
 // How Nod introduces itself to the wallet app (shown on Phantom's connect screen).
-// Phantom rejects an absolute `icon` (error -32602, "identity.icon must be a relative URI"), so the icon must
-// be a path relative to `uri`. It therefore only shows if `uri` is a site that serves /favicon.ico. The
-// repository does not, so Phantom shows its default icon for now. When the product website exists, set `uri`
-// to it, host favicon.ico at its root, and keep `icon` as "favicon.ico".
+//
+// Why Phantom asks to "Connect" before every signature: the MWA 2.0 spec says a wallet should only re-authorize
+// silently when it has verified the app's identity. On Android that means Digital Asset Links: the domain in
+// `uri` must serve /.well-known/assetlinks.json naming this app's package and signing-certificate fingerprint.
+// A GitHub repository URL cannot do that, so Phantom logs "dApp identity is not verified", declines the silent
+// re-authorize, and shows the Connect screen each time. See docs/WALLET-IDENTITY.md.
+//
+// Phantom also rejects an absolute `icon` (-32602, "identity.icon must be a relative URI"), so the icon is a path
+// relative to `uri` and only shows once `uri` is a site serving /favicon.ico.
+//
+// When the product website exists: set `uri` to it, serve favicon.ico and assetlinks.json from it.
 const IDENTITY = {
   name: "Nod",
   uri: "https://github.com/anbusan19/nod",

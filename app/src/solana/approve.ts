@@ -16,6 +16,7 @@ import { simulate, type SimulationResult } from "./simulate";
 import { summarizeSwap, type SwapSummary } from "./swap";
 import { resolveTokens, type TokenInfo } from "./tokens";
 import { assertHashMatches } from "./verify";
+import { classifyWalletError } from "./walletErrors";
 import { verifySigned } from "./verifySigned";
 
 const label = (c: Cluster) => (c === "mainnet-beta" ? "mainnet" : c);
@@ -83,13 +84,17 @@ export async function prepare(proposal: Proposal, owner: string, knownRecipients
   return { proposal, cluster, tx, tables, decoded, simulation, swap, tokens, risks, blockers, notes };
 }
 
-export type ApproveOutcome = { ok: true; signature: string } | { ok: false; reason: string };
+/**
+ * `retryable` means the user simply backed out (closed the wallet, declined, cancelled the fingerprint/face
+ * prompt). Nothing was sent, the proposal is untouched and still waiting, so the card stays open for another try.
+ */
+export type ApproveOutcome = { ok: true; signature: string } | { ok: false; reason: string; retryable?: boolean };
 
 export async function approve(p: Prepared, owner: string): Promise<ApproveOutcome> {
   if (p.blockers.length > 0) return { ok: false, reason: p.blockers[0] };
 
   const bio = await confirmWithBiometrics("Approve this transaction");
-  if (!bio.ok) return { ok: false, reason: bio.reason };
+  if (!bio.ok) return { ok: false, reason: bio.reason, retryable: true };
 
   let txHash = p.proposal.txHash;
   try {
@@ -112,8 +117,10 @@ export async function approve(p: Prepared, owner: string): Promise<ApproveOutcom
     await api.result(p.proposal.id, { status: "confirmed", txHash, signature }).catch(() => {});
     return { ok: true, signature };
   } catch (e) {
-    const message = (e as Error).message;
-    await api.result(p.proposal.id, { status: "failed", txHash, error: message }).catch(() => {});
-    return { ok: false, reason: message };
+    const info = classifyWalletError(e);
+    // Backing out of the wallet is the user's choice, not a failed payment: leave the proposal waiting.
+    if (info.retryable) return { ok: false, reason: info.message, retryable: true };
+    await api.result(p.proposal.id, { status: "failed", txHash, error: info.message }).catch(() => {});
+    return { ok: false, reason: info.message };
   }
 }

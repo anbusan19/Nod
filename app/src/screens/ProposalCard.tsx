@@ -65,6 +65,8 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ ok: boolean; text: string }>();
   const [confirming, setConfirming] = useState(false);
+  /** A gentle message after the user backs out. Unlike `outcome`, it leaves the buttons in place for another try. */
+  const [notice, setNotice] = useState<string>();
   const left = useCountdown(proposal.expiresAt);
   const actionable = proposal.status === "awaiting_human" && left > 0 && !outcome;
 
@@ -91,8 +93,15 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
   const onApprove = useCallback(async () => {
     if (!prepared || !wallet) return;
     setBusy(true);
+    setNotice(undefined);
     const r = await approve(prepared, wallet);
     setBusy(false);
+    if (!r.ok && r.retryable) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      setConfirming(false);
+      setNotice(r.reason);
+      return;
+    }
     if (r.ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setOutcome({ ok: true, text: `Confirmed. Signature ${shorten(r.signature, 6)}` });
@@ -237,6 +246,12 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
       {outcome && (
         <Card style={{ backgroundColor: outcome.ok ? c.okBg : c.dangerBg }}>
           <T weight="semibold" style={{ color: outcome.ok ? c.ok : c.danger }}>{outcome.text}</T>
+        </Card>
+      )}
+
+      {notice && actionable && (
+        <Card style={{ borderColor: c.border, gap: 4 }}>
+          <T size={14}>{notice}</T>
         </Card>
       )}
 
