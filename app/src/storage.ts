@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
-type Key = "deviceToken" | "deviceId" | "mwaAuthToken" | "walletAddress" | "themePref";
+type Key = "deviceToken" | "deviceId" | "mwaAuthToken" | "walletAddress" | "themePref" | "apiUrl";
 
 export const kv = {
   get: (k: Key) => SecureStore.getItemAsync(k),

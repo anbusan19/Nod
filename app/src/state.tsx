@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api, type Agent, type Proposal } from "./api/client";
 import { tryNormalizeAddress } from "./solana/address";
 import { decodeTransaction, deserialize } from "./solana/decode";
+import { registerForPush } from "./push/notifications";
 import { connectWallet, disconnectWallet } from "./solana/mwa";
 import { kv } from "./storage";
 
@@ -16,6 +17,8 @@ interface AppState {
   refresh: () => Promise<void>;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  /** Switch to another backend (or back to the built-in one with undefined). */
+  changeServer: (url?: string) => Promise<void>;
   /** Destinations the user has already sent to via Nod. */
   knownRecipients: Set<string>;
 }
@@ -76,6 +79,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Allowlisted recipients plus anyone a past confirmed proposal already paid.
+  const changeServer = useCallback(
+    async (url?: string) => {
+      await api.setServer(url);
+      setProposals([]);
+      setAgents([]);
+      const saved = tryNormalizeAddress(await kv.get("walletAddress"));
+      if (saved) api.updateDevice({ wallet: saved }).catch(() => {});
+      registerForPush().catch(() => {});
+      await refresh();
+    },
+    [refresh],
+  );
+
   const knownRecipients = useMemo(() => {
     const known = new Set<string>();
     for (const a of agents) a.policy?.allowedRecipients.forEach((r) => known.add(r));
@@ -94,8 +110,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [agents, proposals]);
 
   const value = useMemo(
-    () => ({ ready, error, wallet, proposals, agents, openProposalId, openProposal, refresh, connect, disconnect, knownRecipients }),
-    [ready, error, wallet, proposals, agents, openProposalId, refresh, connect, disconnect, knownRecipients],
+    () => ({ ready, error, wallet, proposals, agents, openProposalId, openProposal, refresh, connect, disconnect, changeServer, knownRecipients }),
+    [ready, error, wallet, proposals, agents, openProposalId, refresh, connect, disconnect, changeServer, knownRecipients],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

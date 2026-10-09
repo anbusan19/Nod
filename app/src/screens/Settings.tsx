@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { TextInput } from "react-native";
 import { ScrollView, View } from "react-native";
+import { getServerUrl } from "../api/client";
+import { parseServerUrl } from "../api/server";
+import { fonts } from "../theme/fonts";
 import { Button, Card, Mono, T } from "../components/ui";
 import { getAuthMethod } from "../security/biometric";
 import { registerForPush } from "../push/notifications";
@@ -10,15 +14,40 @@ import { applyThemePref, useColors, type ThemePref } from "../theme/colors";
 
 export function Settings() {
   const c = useColors();
-  const { wallet, connect, disconnect } = useApp();
+  const { wallet, connect, disconnect, changeServer } = useApp();
+  const [server, setServer] = useState("");
+  const [serverInput, setServerInput] = useState("");
   const [msg, setMsg] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [pref, setPref] = useState<ThemePref>("system");
   const scroller = useRef<ScrollView>(null);
 
   useEffect(() => {
+    getServerUrl().then((u) => { setServer(u); setServerInput(u); }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     kv.get("themePref").then((v) => v && setPref(v as ThemePref)).catch(() => {});
   }, []);
+
+  /** Switch backends, but only to one that answers like a Nod backend. */
+  const saveServer = (reset: boolean) =>
+    run(async () => {
+      let url: string | undefined;
+      if (!reset) {
+        const parsed = parseServerUrl(serverInput, { allowInsecure: __DEV__ });
+        if (!parsed.ok) return parsed.reason;
+        const res = await fetch(`${parsed.url}/health`).catch(() => undefined);
+        const body = res && res.ok ? await res.json().catch(() => undefined) : undefined;
+        if (!body?.ok) return `Could not reach a Nod backend at ${parsed.url}. Nothing was changed.`;
+        url = parsed.url;
+      }
+      await changeServer(url);
+      const now = await getServerUrl();
+      setServer(now);
+      setServerInput(now);
+      return reset ? "Back to the built-in server. This phone registered again, so re-pair your agents." : `Now using ${now}. This phone registered again, so re-pair your agents.`;
+    });
 
   const choose = (p: ThemePref) => {
     setPref(p);
@@ -83,13 +112,30 @@ export function Settings() {
         />
       </Card>
 
+      <Card style={{ gap: 10 }}>
+        <T weight="semibold">Server</T>
+        <T size={13} muted>The Nod backend this app talks to. Agents pair with it, and it forwards their proposals to this phone. Switching servers registers this phone again, so you will need to re-pair your agents.</T>
+        <TextInput
+          value={serverInput}
+          onChangeText={setServerInput}
+          placeholder="https://nod.example.com"
+          placeholderTextColor={c.muted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          style={{ fontFamily: fonts.mono.regular, fontSize: 13, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
+        />
+        <Button title="Use this server" kind="secondary" loading={busy} disabled={serverInput.trim() === server} onPress={() => saveServer(false)} />
+        <Button title="Reset to built-in server" kind="secondary" disabled={busy} onPress={() => saveServer(true)} />
+      </Card>
+
       <Card style={{ gap: 6 }}>
         <T weight="semibold">Device</T>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <T size={13} muted>Cluster</T><Mono>{config.cluster}</Mono>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <T size={13} muted>Backend</T><Mono>{config.apiUrl}</Mono>
+          <T size={13} muted>Backend</T><Mono style={{ flexShrink: 1, textAlign: "right" }}>{server || config.apiUrl}</Mono>
         </View>
         <Button
           title="Check approval method"

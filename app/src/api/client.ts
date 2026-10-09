@@ -40,13 +40,18 @@ export interface Proposal {
   expiresAt: number;
 }
 
+/** The backend this install talks to: the user's saved choice, else the address built into the app. */
+export async function getServerUrl(): Promise<string> {
+  return (await kv.get("apiUrl")) || config.apiUrl;
+}
+
 async function request<T>(method: string, path: string, body?: unknown, auth = true): Promise<T> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (auth) {
     const token = await kv.get("deviceToken");
     if (token) headers.authorization = `Bearer ${token}`;
   }
-  const res = await fetch(`${config.apiUrl}${path}`, {
+  const res = await fetch(`${await getServerUrl()}${path}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -73,6 +78,18 @@ export const api = {
   proposal: (id: string) => request<Proposal>("GET", `/v1/proposals/${id}`),
   /** Attaches a fresh blockhash to an unsigned transaction; instructions are left untouched. */
   refresh: (id: string) => request<Proposal>("POST", `/v1/proposals/${id}/refresh`),
+  /** Revoke an agent for good. Its key stops working immediately. */
+  removeAgent: (id: string) => request<{ ok: true }>("DELETE", `/v1/agents/${id}`),
+  /** Issue a new key for an agent. The old key stops working; the new one is returned once. */
+  rotateKey: (id: string) => request<{ apiKey: string }>("POST", `/v1/agents/${id}/rotate-key`),
+  /** Point this install at another backend. Devices are registered per backend, so register again. */
+  async setServer(url: string | undefined): Promise<void> {
+    if (url) await kv.set("apiUrl", url);
+    else await kv.remove("apiUrl");
+    await kv.remove("deviceToken");
+    await kv.remove("deviceId");
+    await api.ensureDevice();
+  },
   reject: (id: string) => request<{ ok: true }>("POST", `/v1/proposals/${id}/reject`),
   result: (id: string, r: { status: "approved" | "submitted" | "confirmed" | "failed"; txHash: string; signature?: string; error?: string }) =>
     request<{ ok: true }>("POST", `/v1/proposals/${id}/result`, r),

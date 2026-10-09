@@ -35,6 +35,29 @@ function AgentCard({ agent }: { agent: Agent }) {
   const [daily, setDaily] = useState(p ? toSol(p.dailyCapLamports) : "0");
   const [recipient, setRecipient] = useState("");
   const [saving, setSaving] = useState(false);
+  const [newKey, setNewKey] = useState<string>();
+
+  const confirm = (title: string, message: string, action: string, onYes: () => void) =>
+    Alert.alert(title, message, [{ text: "Cancel", style: "cancel" }, { text: action, style: "destructive", onPress: onYes }]);
+
+  const rotate = () =>
+    confirm("Make a new key?", `The key ${agent.name} uses now stops working immediately. You will have to give it the new key.`, "Make new key", async () => {
+      try {
+        setNewKey((await api.rotateKey(agent.id)).apiKey);
+      } catch (e) {
+        Alert.alert("Could not rotate", (e as Error).message);
+      }
+    });
+
+  const remove = () =>
+    confirm("Remove this agent?", `${agent.name} stops working immediately and anything it still has waiting is cancelled. Its past activity stays in your feed.`, "Remove", async () => {
+      try {
+        await api.removeAgent(agent.id);
+        await refresh();
+      } catch (e) {
+        Alert.alert("Could not remove", (e as Error).message);
+      }
+    });
 
   const save = async (patch: Partial<Policy> = {}) => {
     if (!p) return;
@@ -105,6 +128,20 @@ function AgentCard({ agent }: { agent: Agent }) {
           save({ allowedRecipients: [...new Set([...(p?.allowedRecipients ?? []), r])] });
         }}
       />
+
+      {newKey && (
+        <View style={{ gap: 6, borderWidth: 1, borderColor: c.accentText, borderRadius: 12, padding: 12 }}>
+          <T size={13} weight="semibold">New key. Shown only now.</T>
+          <Mono selectable size={12}>{newKey}</Mono>
+          <T size={12} muted>Copy it into the agent's NOD_AGENT_KEY. Press and hold the key to select and copy.</T>
+          <Button title="I have saved it" kind="secondary" onPress={() => setNewKey(undefined)} />
+        </View>
+      )}
+
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flex: 1 }}><Button title="New key" kind="secondary" onPress={rotate} /></View>
+        <View style={{ flex: 1 }}><Button title="Remove agent" kind="danger" onPress={remove} /></View>
+      </View>
     </Card>
   );
 }
