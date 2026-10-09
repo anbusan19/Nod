@@ -24,6 +24,8 @@ export const config = {
   jupiterUrl: process.env.JUPITER_API_URL ?? "https://lite-api.jup.ag/swap/v1",
   defaultAutoLimitUsd: num(process.env.DEFAULT_AUTO_LIMIT_USD, 5),
   defaultHardCapUsd: num(process.env.DEFAULT_HARD_CAP_USD, 500),
+  /** Print one line per request (set by `nod-server`; off by default so tests and containers stay quiet). */
+  requestLog: process.env.NOD_REQUEST_LOG === "1",
   proposalTtlSeconds: num(process.env.PROPOSAL_TTL_SECONDS, 90),
 };
 

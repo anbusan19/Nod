@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir, networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
+import { renderBanner, supportsColor } from "./banner.js";
 
 const HELP = `nod-server: the Nod backend
 
@@ -75,14 +76,22 @@ const lan = Object.values(networkInterfaces())
   .filter((n) => n && n.family === "IPv4" && !n.internal)
   .map((n) => n!.address);
 
-console.log(`
-Nod backend  (${cluster})
-  data folder   ${dataDir}
-  push          ${pushOn ? "on" : "off (optional, see --help)"}
+set("NOD_REQUEST_LOG", "1");
 
-Connect the Nod app to this server:
-  same Wi-Fi, debug builds   ${lan.length ? lan.map((a) => `http://${a}:${port}`).join("  ") : "(no network address found)"}
-  release builds need https  expose it with a tunnel or a reverse proxy (docs/DEPLOY.md), then enter that https address in the app
-`);
+// Node prints a one-time "SQLite is experimental" notice that only confuses people reading the logs.
+const emitWarning = process.emitWarning.bind(process);
+process.emitWarning = ((w: string | Error, ...rest: unknown[]) => {
+  if (String(typeof w === "string" ? w : w.message).includes("SQLite")) return;
+  (emitWarning as (...a: unknown[]) => void)(w, ...rest);
+}) as typeof process.emitWarning;
+
+const version = (() => {
+  try {
+    return JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version as string;
+  } catch {
+    return "unknown";
+  }
+})();
+console.log(renderBanner({ version, cluster, port, dataDir, pushOn, lan }, { color: supportsColor(), columns: process.stdout.columns }));
 
 await import("./index.js");

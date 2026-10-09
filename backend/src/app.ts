@@ -1,3 +1,4 @@
+import { formatRequestLog, supportsColor } from "./banner.js";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
@@ -53,6 +54,14 @@ const rpcBlockhash = async (cluster: string) => {
 export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash }: Deps) {
   const app = Fastify({ logger: false, trustProxy: config.trustProxy, bodyLimit: 256 * 1024 });
   app.register(cors, { origin: true });
+  if (config.requestLog) {
+    const color = supportsColor();
+    app.addHook("onResponse", async (req, reply) => {
+      const route = req.routeOptions?.url ?? "(no route)";
+      if (route === "/health" && reply.statusCode < 400) return; // pollers would drown everything else
+      console.log(formatRequestLog({ method: req.method, route, status: reply.statusCode, ms: reply.elapsedTime }, color));
+    });
+  }
   // Limits are per API key or device token when one is sent, otherwise per client address.
   app.register(rateLimit, {
     global: true,
