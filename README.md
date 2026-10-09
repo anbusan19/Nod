@@ -504,6 +504,9 @@ npm run payments
 
 # Trading agent: rule-based rebalance (e.g. if allocation drifts more than 5%)
 npm run trader
+
+# Attack scenarios: liar, unknown, delegate, assign, swap-backend (or all)
+npm run tamper -- liar
 ```
 
 The trading agent uses a deliberately simple rule. Nod demonstrates the **approval layer**, not a profitable strategy, and no performance claims are made.

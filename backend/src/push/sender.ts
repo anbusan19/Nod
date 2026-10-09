@@ -1,5 +1,5 @@
 export interface PushSender {
-  /** Sends a data-only message. Payload carries the proposal id and nothing else. */
+  /** Sends a generic alert. The only identifier in the payload is the proposal id. */
   send(fcmToken: string, proposalId: string): Promise<void>;
 }
 
@@ -22,10 +22,15 @@ export async function createPushSender(serviceAccountPath: string | undefined): 
     admin.initializeApp({ credential: admin.credential.cert(JSON.parse(readFileSync(serviceAccountPath, "utf8"))) });
     return {
       async send(fcmToken, proposalId) {
+        // The visible text is generic on purpose: no amounts, recipients or reasons leave the backend.
+        // `data` carries only the proposal id so the app can open the right card when tapped.
         await admin.messaging().send({
           token: fcmToken,
           data: { proposalId },
-          android: { priority: "high" },
+          android: {
+            priority: "high",
+            notification: { channelId: "approvals", title: "Nod", body: "An agent needs your approval", visibility: "public" },
+          },
         });
       },
     };

@@ -43,6 +43,7 @@ export function evaluate(tx: TxSummary, policy: Policy, ctx: PolicyContext): Dec
   if (unknown.length > 0) return { tier: "nod", reason: "Contains a program Nod cannot decode" };
   if (tx.isSwap) return { tier: "nod", reason: "Swaps always need approval" };
   if (tx.usesLookupTables) return { tier: "nod", reason: "Uses address lookup tables" };
+  if (!tx.plainTransfersOnly) return { tier: "nod", reason: "Contains more than plain SOL transfers" };
 
   const allow = new Set(policy.allowedRecipients);
   const newRecipient = tx.recipients.some((r) => !allow.has(r));

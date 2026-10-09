@@ -12,10 +12,14 @@ export interface TxSummary {
   /** True if a Token `SetAuthority` or `Approve` style instruction is present. */
   grantsAuthority: boolean;
   isSwap: boolean;
+  /** True only if every instruction is a SOL transfer, compute budget or memo. */
+  plainTransfersOnly: boolean;
   recentBlockhash: string;
 }
 
+const SYSTEM_ASSIGN = 1;
 const SYSTEM_TRANSFER = 2;
+const SYSTEM_ASSIGN_WITH_SEED = 10;
 const TOKEN_APPROVE = 4;
 const TOKEN_SET_AUTHORITY = 6;
 const TOKEN_APPROVE_CHECKED = 13;
@@ -34,6 +38,7 @@ export function inspectTransaction(txBase64: string): TxSummary {
   const recipients: string[] = [];
   let lamports = 0;
   let grantsAuthority = false;
+  let plainTransfersOnly = true;
 
   for (const ix of msg.compiledInstructions) {
     const programId = keys[ix.programIdIndex]?.toBase58();
@@ -41,10 +46,17 @@ export function inspectTransaction(txBase64: string): TxSummary {
     programs.add(programId);
     const data = Buffer.from(ix.data);
 
-    if (programId === PROGRAMS.system && data.length >= 12 && data.readUInt32LE(0) === SYSTEM_TRANSFER) {
+    const sysType = programId === PROGRAMS.system && data.length >= 4 ? data.readUInt32LE(0) : -1;
+    if (sysType === SYSTEM_TRANSFER && data.length >= 12) {
       lamports += Number(data.readBigUInt64LE(4));
       const to = keys[ix.accountKeyIndexes[1]]?.toBase58();
       if (to) recipients.push(to);
+    } else if (sysType === SYSTEM_ASSIGN || sysType === SYSTEM_ASSIGN_WITH_SEED) {
+      // Reassigning an account to another program can lock the owner out of it.
+      grantsAuthority = true;
+      plainTransfersOnly = false;
+    } else if (programId !== PROGRAMS.computeBudget && programId !== PROGRAMS.memo) {
+      plainTransfersOnly = false;
     }
     if (programId === PROGRAMS.token && data.length >= 1) {
       const tag = data[0];
@@ -62,6 +74,7 @@ export function inspectTransaction(txBase64: string): TxSummary {
     usesLookupTables: msg.addressTableLookups.length > 0,
     grantsAuthority,
     isSwap: programs.has(PROGRAMS.jupiter),
+    plainTransfersOnly,
     recentBlockhash: msg.recentBlockhash,
   };
 }
