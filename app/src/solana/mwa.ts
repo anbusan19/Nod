@@ -7,13 +7,14 @@ import { connectionFor } from "./connection";
 import { kv } from "../storage";
 
 // How Nod introduces itself to the wallet app (shown on Phantom's connect screen).
-// `uri` is kept as the repository for now. `icon` is the favicon.ico at the repository root, as an
-// absolute address, because the wallet fetches it without a login: it appears once the repository is
-// public. When the product website exists, point both `uri` and `icon` there.
+// Phantom rejects an absolute `icon` (error -32602, "identity.icon must be a relative URI"), so the icon must
+// be a path relative to `uri`. It therefore only shows if `uri` is a site that serves /favicon.ico. The
+// repository does not, so Phantom shows its default icon for now. When the product website exists, set `uri`
+// to it, host favicon.ico at its root, and keep `icon` as "favicon.ico".
 const IDENTITY = {
   name: "Nod",
   uri: "https://github.com/anbusan19/nod",
-  icon: "https://raw.githubusercontent.com/anbusan19/Nod/main/favicon.ico",
+  icon: "favicon.ico",
 };
 
 const cluster = config.cluster === "mainnet-beta" ? "mainnet-beta" : "devnet";
