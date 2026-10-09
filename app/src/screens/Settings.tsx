@@ -194,6 +194,7 @@ export function Settings() {
             <T size={13} muted>Approvals will use</T>
             <T>{plan.summary}</T>
             {plan.note ? <T size={13} muted>{plan.note}</T> : null}
+            {plan.warning ? <T size={13} style={{ color: c.warn }}>{plan.warning}</T> : null}
           </View>
         )}
         <Button title="Try it" kind="secondary" disabled={busy} onPress={() => run(async () => {

@@ -34,6 +34,8 @@ export interface AuthPlan {
   summary: string;
   /** Present when the choice cannot be honoured exactly and what happens instead. */
   note?: string;
+  /** Present when the choice has a real downside the user should know about. */
+  warning?: string;
 }
 
 export function planAuth(input: Partial<AuthPrefs> | null | undefined, level: EnrolledLevel): AuthPlan {
@@ -62,7 +64,14 @@ export function planAuth(input: Partial<AuthPrefs> | null | undefined, level: En
     summary = "Your screen lock (PIN, pattern or password).";
     note = `${names[0].toUpperCase()}${names.slice(1)} isn't set up on this phone, so your screen lock is used. Set it up in Android settings to use it.`;
   }
-  return { blocked: false, securityLevel, disableDeviceFallback: !keepFallback, summary, note };
+  // A biometric that is set up can still fail to read (a dim room, wet fingers). With no backup ticked, the user
+  // then cannot confirm anything until they turn the screen lock back on, so say so up front.
+  const warning =
+    enough && !keepFallback
+      ? `No backup: if your ${names} can't be read (poor light, wet fingers), you won't be able to approve. Turn Screen lock back on here if that happens.`
+      : undefined;
+
+  return { blocked: false, securityLevel, disableDeviceFallback: !keepFallback, summary, note, warning };
 }
 
 export function parsePrefs(raw: string | null): AuthPrefs {

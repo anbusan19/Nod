@@ -58,6 +58,14 @@ describe("planAuth", () => {
     expect(planAuth(P(false, false, true), 1).note).toBeUndefined();
   });
 
+  it("warns when a working biometric has no backup, and only then", () => {
+    expect(planAuth(P(false, true, false), 2).warning).toMatch(/No backup: if your face can't be read \(poor light/);
+    expect(planAuth(P(true, false, false), 3).warning).toMatch(/Turn Screen lock back on/);
+    expect(planAuth(P(false, true, true), 2).warning).toBeUndefined(); // backup ticked
+    expect(planAuth(P(true, false, false), 2).warning).toBeUndefined(); // biometric not set up: the screen lock is used anyway
+    expect(planAuth(P(false, false, true), 3).warning).toBeUndefined();
+  });
+
   it("describes face-or-fingerprint choices", () => {
     expect(planAuth(P(true, true, false), 3).summary).toBe("Your fingerprint or face only.");
     expect(planAuth(P(false, true, true), 2).summary).toBe("Your face, or your screen lock as a backup.");
