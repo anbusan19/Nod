@@ -1,8 +1,9 @@
 import * as Haptics from "expo-haptics";
 import { useState } from "react";
-import { Alert, ScrollView, Switch, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
 import { api, type Agent, type Policy } from "../api/client";
-import { Button, Card, Mono, T } from "../components/ui";
+import { Feather } from "@expo/vector-icons";
+import { Badge, Button, Card, Mono, T } from "../components/ui";
 import { useApp } from "../state";
 import { fonts } from "../theme/fonts";
 import { useColors } from "../theme/colors";
@@ -26,10 +27,15 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   );
 }
 
-function AgentCard({ agent }: { agent: Agent }) {
-  const { refresh } = useApp();
+const fmtSol = (l: number) => `${Number((l / LAMPORTS).toFixed(4))}`;
+
+function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onToggle: () => void }) {
+  const { refresh, proposals } = useApp();
   const c = useColors();
   const p = agent.policy;
+  const mine = proposals.filter((x) => x.agentId === agent.id);
+  const waiting = mine.filter((x) => x.status === "awaiting_human").length;
+  const last = mine.reduce((m, x) => Math.max(m, x.createdAt), 0);
   const [auto, setAuto] = useState(p ? toSol(p.autoLimitLamports) : "0");
   const [hard, setHard] = useState(p ? toSol(p.hardCapLamports) : "0");
   const [daily, setDaily] = useState(p ? toSol(p.dailyCapLamports) : "0");
@@ -90,12 +96,30 @@ function AgentCard({ agent }: { agent: Agent }) {
 
   return (
     <Card style={{ gap: 12 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <T size={18} weight="semibold">{agent.name}</T>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${agent.name}, ${open ? "collapse" : "expand"} settings`}
+        onPress={onToggle}
+        style={{ gap: 6 }}
+      >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <T size={13} style={{ color: agent.frozen ? c.danger : c.muted }}>{agent.frozen ? "Frozen" : "Freeze"}</T>
-          <Switch value={agent.frozen} onValueChange={toggleFreeze} />
+          <T size={18} weight="semibold" style={{ flexShrink: 1 }}>{agent.name}</T>
+          <Badge label={agent.frozen ? "Frozen" : "Active"} tone={agent.frozen ? "danger" : "ok"} />
+          <View style={{ flex: 1 }} />
+          <Feather name={open ? "chevron-up" : "chevron-down"} size={22} color={c.muted} />
         </View>
+        {p && <T size={13} muted>Auto up to {fmtSol(p.autoLimitLamports)} · Max {fmtSol(p.hardCapLamports)} · Daily {fmtSol(p.dailyCapLamports)} SOL</T>}
+        <T size={13} muted>
+          {waiting > 0 ? `${waiting} waiting for you · ` : ""}
+          {mine.length === 0 ? "No proposals yet" : `${mine.length} proposal${mine.length === 1 ? "" : "s"}${last ? ` · last ${new Date(last).toLocaleDateString()}` : ""}`}
+        </T>
+      </Pressable>
+      {open && (
+        <>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <T size={13} style={{ color: agent.frozen ? c.danger : c.muted }}>{agent.frozen ? "Frozen: every proposal is blocked" : "Freeze this agent"}</T>
+        <Switch value={agent.frozen} onValueChange={toggleFreeze} />
       </View>
       <Field label="Auto-approve up to (SOL)" value={auto} onChange={setAuto} />
       <Field label="Hard cap per transaction (SOL)" value={hard} onChange={setHard} />
@@ -142,6 +166,8 @@ function AgentCard({ agent }: { agent: Agent }) {
         <View style={{ flex: 1 }}><Button title="New key" kind="secondary" onPress={rotate} /></View>
         <View style={{ flex: 1 }}><Button title="Remove agent" kind="danger" onPress={remove} /></View>
       </View>
+        </>
+      )}
     </Card>
   );
 }
@@ -149,6 +175,7 @@ function AgentCard({ agent }: { agent: Agent }) {
 export function Agents() {
   const c = useColors();
   const { agents } = useApp();
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [pairing, setPairing] = useState<{ code: string; expiresAt: number }>();
   const [error, setError] = useState<string>();
 
@@ -172,8 +199,16 @@ export function Agents() {
         {error && <T size={13} style={{ color: c.danger }}>{error}</T>}
         <Button title={pairing ? "New code" : "Show pairing code"} onPress={pair} />
       </Card>
-      {agents.length === 0 && <T muted>No agents paired yet.</T>}
-      {agents.map((a) => <AgentCard key={a.id + (a.policy ? JSON.stringify(a.policy) : "")} agent={a} />)}
+      {agents.length === 0 && <T muted>No agents paired yet. Pair one above to give it a spending limit.</T>}
+      {agents.length > 1 && <T size={13} muted>{agents.length} agents. Tap one to change its limits, freeze it or remove it.</T>}
+      {agents.map((a) => (
+        <AgentCard
+          key={a.id + (a.policy ? JSON.stringify(a.policy) : "")}
+          agent={a}
+          open={expanded[a.id] ?? agents.length === 1}
+          onToggle={() => setExpanded((e) => ({ ...e, [a.id]: !(e[a.id] ?? agents.length === 1) }))}
+        />
+      ))}
     </ScrollView>
   );
 }

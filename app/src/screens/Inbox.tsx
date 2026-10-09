@@ -1,4 +1,6 @@
-import { FlatList, Pressable, View } from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, ScrollView, View } from "react-native";
+import { STATUS_FILTERS, countByFilter, dayLabel, filterActivity, type StatusFilterKey } from "../activity/filter";
 import type { Proposal } from "../api/client";
 import { Badge, Card, Mono, T } from "../components/ui";
 import { useApp } from "../state";
@@ -48,17 +50,55 @@ function Row({ p, onPress }: { p: Proposal; onPress: () => void }) {
   );
 }
 
+function Chip({ label, count, selected, onPress }: { label: string; count?: number; selected: boolean; onPress: () => void }) {
+  const c = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: selected ? c.primary : c.border, backgroundColor: selected ? c.primary : "transparent" }}
+    >
+      <T size={13} weight="semibold" style={{ color: selected ? c.onPrimary : c.text }}>
+        {label}
+        {count !== undefined ? `  ${count}` : ""}
+      </T>
+    </Pressable>
+  );
+}
+
 export function Inbox({ mode }: { mode: "approvals" | "activity" }) {
   const c = useColors();
   const { proposals, openProposal, error, ready } = useApp();
-  const data = mode === "approvals" ? proposals.filter((p) => p.status === "awaiting_human") : proposals;
+  const isActivity = mode === "activity";
+  const [status, setStatus] = useState<StatusFilterKey>("all");
+  const [agentId, setAgentId] = useState<string>();
+  const agentsInFeed = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of proposals) if (!seen.has(p.agentId)) seen.set(p.agentId, p.agentName ?? "Agent");
+    return [...seen];
+  }, [proposals]);
+  const counts = useMemo(() => countByFilter(proposals, agentId), [proposals, agentId]);
+  const data = mode === "approvals" ? proposals.filter((p) => p.status === "awaiting_human") : filterActivity(proposals, status, agentId);
+  const filtering = isActivity && (status !== "all" || !!agentId);
+  const clear = () => {
+    setStatus("all");
+    setAgentId(undefined);
+  };
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: c.bg }}
       contentContainerStyle={{ padding: 16, gap: 12 }}
       data={data}
       keyExtractor={(p) => p.id}
-      renderItem={({ item }) => <Row p={item} onPress={() => openProposal(item.id)} />}
+      renderItem={({ item, index }) => (
+        <View style={{ gap: 8 }}>
+          {isActivity && (index === 0 || dayLabel(data[index - 1].createdAt) !== dayLabel(item.createdAt)) && (
+            <T size={13} weight="semibold" muted style={{ marginTop: index === 0 ? 0 : 6 }}>{dayLabel(item.createdAt)}</T>
+          )}
+          <Row p={item} onPress={() => openProposal(item.id)} />
+        </View>
+      )}
       ListHeaderComponent={
         <View style={{ gap: 8, marginBottom: 4 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -66,11 +106,38 @@ export function Inbox({ mode }: { mode: "approvals" | "activity" }) {
             <T size={24} weight="bold">{mode === "approvals" ? "Needs your Nod" : "Activity"}</T>
           </View>
           {error && <T size={13} style={{ color: c.danger }}>Can't reach the backend: {error}</T>}
+          {isActivity && proposals.length > 0 && (
+            <View style={{ gap: 8 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {STATUS_FILTERS.filter((f) => f.key === "all" || f.key === status || counts[f.key] > 0).map((f) => (
+                  <Chip key={f.key} label={f.label} count={counts[f.key]} selected={status === f.key} onPress={() => setStatus(f.key)} />
+                ))}
+              </ScrollView>
+              {agentsInFeed.length > 1 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  <Chip label="All agents" selected={!agentId} onPress={() => setAgentId(undefined)} />
+                  {agentsInFeed.map(([id, name]) => (
+                    <Chip key={id} label={name} selected={agentId === id} onPress={() => setAgentId(agentId === id ? undefined : id)} />
+                  ))}
+                </ScrollView>
+              )}
+              {filtering && (
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <T size={12} muted>Showing {data.length} of {proposals.length}</T>
+                  <Pressable accessibilityRole="button" hitSlop={8} onPress={clear}>
+                    <T size={12} weight="semibold" style={{ color: c.accentText }}>Clear filters</T>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       }
       ListEmptyComponent={
         ready ? (
-          <T muted>{mode === "approvals" ? "Nothing waiting. Agents will show up here when they need you." : "No activity yet."}</T>
+          <T muted>
+            {mode === "approvals" ? "Nothing waiting. Agents will show up here when they need you." : filtering ? "Nothing matches these filters." : "No activity yet."}
+          </T>
         ) : null
       }
     />
