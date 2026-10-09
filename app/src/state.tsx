@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, getServerUrl, type Agent, type Proposal } from "./api/client";
+import { api, getServerUrl, setReregisteredHandler, type Agent, type Proposal } from "./api/client";
 import { tryNormalizeAddress } from "./solana/address";
 import { decodeTransaction, deserialize } from "./solana/decode";
 import { registerForPush } from "./push/notifications";
@@ -46,6 +46,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       setError((e as Error).message);
     }
+  }, []);
+
+  // If a server forgets this phone, the client registers again; send it the wallet address and push token again.
+  useEffect(() => {
+    setReregisteredHandler(async () => {
+      const saved = tryNormalizeAddress(await kv.get("walletAddress"));
+      if (saved) await api.updateDevice({ wallet: saved });
+      await kv.remove("pushServer");
+      await registerForPush();
+    });
   }, []);
 
   useEffect(() => {

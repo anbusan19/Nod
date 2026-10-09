@@ -40,6 +40,14 @@ export async function getDevice(store: Store, serverUrl: string): Promise<Device
   return undefined;
 }
 
+/** Forget this phone's registration on one server, for when that server no longer recognises it. */
+export async function forgetDevice(store: Store & { set(key: "devices", value: string): Promise<void> }, serverUrl: string): Promise<void> {
+  const map = await read(store);
+  if (!(serverUrl in map)) return;
+  delete map[serverUrl];
+  await store.set("devices", JSON.stringify(map));
+}
+
 export async function saveDevice(store: Store, serverUrl: string, device: Device): Promise<void> {
   const map = await read(store);
   map[serverUrl] = device;
