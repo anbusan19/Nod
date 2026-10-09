@@ -28,8 +28,8 @@ export function holdReasons(opts: {
   autoLimitLamports: number | undefined;
 }): string[] {
   const reasons: string[] = [];
-  if (opts.intent?.status === "mismatch") reasons.push("It does not match what the agent said.");
-  if (opts.risks.some((r) => r.severity === "danger")) reasons.push("It carries a high-risk warning.");
-  if (opts.outflowLamports > largeThreshold(opts.autoLimitLamports)) reasons.push("The amount is large for this agent.");
+  if (opts.intent?.status === "mismatch") reasons.push("Doesn't match the agent");
+  if (opts.risks.some((r) => r.severity === "danger")) reasons.push("High-risk warning");
+  if (opts.outflowLamports > largeThreshold(opts.autoLimitLamports)) reasons.push("Large amount");
   return reasons;
 }

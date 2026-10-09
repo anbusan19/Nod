@@ -35,12 +35,12 @@ describe("friction", () => {
   });
 
   it("needs a hold for a large amount", () => {
-    expect(holdReasons({ ...base, outflowLamports: 500_000_000n })).toEqual(["The amount is large for this agent."]);
+    expect(holdReasons({ ...base, outflowLamports: 500_000_000n })).toEqual(["Large amount"]);
   });
 
   it("needs a hold for a mismatch", () => {
     const r = holdReasons({ ...base, intent: { status: "mismatch", problems: ["x"] }, outflowLamports: 1n });
-    expect(r).toEqual(["It does not match what the agent said."]);
+    expect(r).toEqual(["Doesn't match the agent"]);
   });
 
   it("needs a hold for a danger badge but not a warn badge", () => {

@@ -4,11 +4,11 @@ import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, View } from
 import { useColors } from "../theme/colors";
 import { T } from "./ui";
 
-const HOLD_MS = 1500;
-const TICK_MS = 250;
+const HOLD_MS = 1000;
+const TICK_MS = 200;
 
 /**
- * Confirms only after the user keeps pressing for about 1.5 seconds. Letting go early cancels,
+ * Confirms only after the user keeps pressing for about one second. Letting go early cancels,
  * so a stray or reflex tap can never approve. Screen-reader users, who cannot hold a gesture,
  * confirm with a normal activation instead.
  */
@@ -18,7 +18,7 @@ export function HoldButton({
   onConfirm,
   disabled,
   loading,
-  tone = "danger",
+  tone = "primary",
 }: {
   title: string;
   holdingTitle?: string;
@@ -78,8 +78,10 @@ export function HoldButton({
     }
   }, [loading, progress]);
 
-  const bg = tone === "danger" ? c.dangerBg : c.card;
-  const fg = tone === "danger" ? c.danger : c.primary;
+  // Same look as the app's other primary buttons; the progress fill darkens/lightens it as you hold.
+  const bg = tone === "primary" ? c.primary : c.dangerBg;
+  const fg = tone === "primary" ? c.onPrimary : c.danger;
+  const border = tone === "primary" ? c.primary : c.danger;
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
 
   return (
@@ -92,9 +94,9 @@ export function HoldButton({
       onPressIn={screenReader ? undefined : start}
       onPressOut={screenReader ? undefined : cancel}
       onPress={screenReader ? onConfirm : undefined}
-      style={[styles.btn, { backgroundColor: bg, borderColor: fg, opacity: disabled ? 0.45 : 1 }]}
+      style={[styles.btn, { backgroundColor: bg, borderColor: border, opacity: disabled ? 0.45 : 1 }]}
     >
-      <Animated.View style={[styles.fill, { width, backgroundColor: fg, opacity: 0.28 }]} pointerEvents="none" />
+      <Animated.View style={[styles.fill, { width, backgroundColor: fg, opacity: 0.35 }]} pointerEvents="none" />
       <View pointerEvents="none">
         <T weight="semibold" style={{ color: fg }}>{loading ? "Sending…" : holding ? holdingTitle : title}</T>
       </View>

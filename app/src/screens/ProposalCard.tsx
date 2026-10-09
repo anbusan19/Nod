@@ -223,12 +223,11 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
       {actionable && !confirming && (
         <View style={{ gap: 10 }}>
           {reasons.length > 0 && (
-            <Card style={{ borderColor: c.warn, backgroundColor: c.warnBg, gap: 4 }}>
-              <T size={13} weight="semibold" style={{ color: c.warn }}>Extra care needed</T>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {reasons.map((r) => (
-                <T key={r} size={13} style={{ color: c.warn }}>{r}</T>
+                <Badge key={r} label={r} tone="warn" />
               ))}
-            </Card>
+            </View>
           )}
           {mismatch ? (
             <Button title="Review and approve anyway" kind="secondary" onPress={() => setConfirming(true)} disabled={!prepared || prepared.blockers.length > 0} />
