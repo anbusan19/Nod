@@ -2,9 +2,15 @@
   "name": "nod",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["backend", "sdk", "demo-agent"],
+  "workspaces": [
+    "backend",
+    "sdk",
+    "demo-agent"
+  ],
   "scripts": {
     "backend": "npm run dev -w backend",
-    "test": "npm test --workspaces --if-present"
+    "test": "npm test --workspaces --if-present",
+    "prepare": "npm run build -w sdk",
+    "build:sdk": "npm run build -w sdk"
   }
 }

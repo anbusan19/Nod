@@ -18,3 +18,4 @@ app/ios/
 *.db-shm
 *.db-wal
 *-firebase-adminsdk-*.json
+*.tgz
