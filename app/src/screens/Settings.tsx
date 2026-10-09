@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, Card, Mono, T } from "../components/ui";
 import { getAuthMethod } from "../security/biometric";
@@ -14,6 +14,7 @@ export function Settings() {
   const [msg, setMsg] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [pref, setPref] = useState<ThemePref>("system");
+  const scroller = useRef<ScrollView>(null);
 
   useEffect(() => {
     kv.get("themePref").then((v) => v && setPref(v as ThemePref)).catch(() => {});
@@ -27,17 +28,25 @@ export function Settings() {
 
   const run = async (fn: () => Promise<string | void>) => {
     setBusy(true);
+    setMsg(undefined);
     try {
-      setMsg((await fn()) ?? undefined);
+      setMsg((await fn()) ?? "Done.");
     } catch (e) {
       setMsg((e as Error).message);
     }
     setBusy(false);
+    // Feedback lives at the top of the screen, so bring it into view.
+    scroller.current?.scrollTo({ y: 0, animated: true });
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
+    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
       <T size={24} weight="bold">Settings</T>
+      {msg && (
+        <Card style={{ borderColor: c.primary }}>
+          <T size={14}>{msg}</T>
+        </Card>
+      )}
 
       <Card style={{ gap: 10 }}>
         <T weight="semibold">Wallet</T>
@@ -96,7 +105,6 @@ export function Settings() {
         />
       </Card>
 
-      {msg && <T size={13} muted>{msg}</T>}
     </ScrollView>
   );
 }
