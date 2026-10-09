@@ -11,7 +11,8 @@ import { Inbox } from "./src/screens/Inbox";
 import { ProposalCard } from "./src/screens/ProposalCard";
 import { Settings } from "./src/screens/Settings";
 import { AppProvider, useApp } from "./src/state";
-import { useColors } from "./src/theme/colors";
+import { applyThemePref, useColors, useIsDark, type ThemePref } from "./src/theme/colors";
+import { kv } from "./src/storage";
 import { fontAssets } from "./src/theme/fonts";
 
 const TABS = ["Approvals", "Activity", "Agents", "Settings"] as const;
@@ -57,16 +58,35 @@ function Shell() {
   );
 }
 
+function Frame() {
+  const c = useColors();
+  const dark = useIsDark();
+  return (
+    <>
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
+        <Shell />
+      </SafeAreaView>
+      <StatusBar style={dark ? "light" : "dark"} />
+    </>
+  );
+}
+
 export default function App() {
   const [loaded] = useFonts(fontAssets);
-  if (!loaded) return null;
+  const [themeReady, setThemeReady] = useState(false);
+
+  useEffect(() => {
+    kv.get("themePref")
+      .then((v) => applyThemePref(v === "light" || v === "dark" ? (v as ThemePref) : "system"))
+      .catch(() => {})
+      .finally(() => setThemeReady(true));
+  }, []);
+
+  if (!loaded || !themeReady) return null;
   return (
     <SafeAreaProvider>
       <AppProvider>
-        <SafeAreaView style={{ flex: 1 }}>
-          <Shell />
-        </SafeAreaView>
-        <StatusBar style="auto" />
+        <Frame />
       </AppProvider>
     </SafeAreaProvider>
   );
