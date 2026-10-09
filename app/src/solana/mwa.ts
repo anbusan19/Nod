@@ -25,11 +25,20 @@ export interface WalletSession {
 }
 
 async function authorizeOrReauthorize(wallet: Web3MobileWallet) {
+  const chain = `solana:${cluster}` as const;
   const cached = await kv.get("mwaAuthToken");
-  const auth = cached
-    ? await wallet.reauthorize({ auth_token: cached, identity: IDENTITY }).catch(() => undefined)
+
+  // MWA 2.0: authorize() with the saved token re-authorizes silently. The older reauthorize() is deprecated and
+  // Phantom does not implement it, which used to force a full "Connect" prompt before every signature.
+  let result = cached
+    ? await wallet.authorize({ chain, identity: IDENTITY, auth_token: cached }).catch((e: unknown) => {
+        if (__DEV__) console.log("[mwa] silent re-authorize failed, asking the wallet to connect again:", (e as Error).message);
+        return undefined;
+      })
     : undefined;
-  const result = auth ?? (await wallet.authorize({ chain: `solana:${cluster}`, identity: IDENTITY }));
+  if (__DEV__ && result) console.log("[mwa] silent re-authorize ok (no Connect prompt)");
+  result ??= await wallet.authorize({ chain, identity: IDENTITY });
+
   await kv.set("mwaAuthToken", result.auth_token);
   const account = result.accounts[0];
   const address = normalizeAddress(account.address);
