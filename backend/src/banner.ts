@@ -29,15 +29,15 @@ const LOGO_WIDTH = 34;
 /** Below this width the logo would wrap and wreck the layout, so only the text is shown. */
 const MIN_WIDTH_FOR_LOGO = 78;
 
-/** "NOD" in chunky block letters, two terminal cells per pixel so it is as wide as it is tall. */
-const GLYPHS: Record<string, string[]> = {
-  N: ["#   #", "##  #", "# # #", "#  ##", "#   #"],
-  O: [" ### ", "#   #", "#   #", "#   #", " ### "],
-  D: ["#### ", "#   #", "#   #", "#   #", "#### "],
-};
-const WORDMARK: string[] = Array.from({ length: 5 }, (_, row) =>
-  [..."NOD"].map((ch) => [...GLYPHS[ch][row]].map((px) => (px === "#" ? "██" : "  ")).join("")).join("   ").trimEnd(),
-);
+/** "NOD" in the outlined block style of terminal installers. */
+const WORDMARK: string[] = [
+  "███╗   ██╗ ██████╗ ██████╗ ",
+  "████╗  ██║██╔═══██╗██╔══██╗",
+  "██╔██╗ ██║██║   ██║██║  ██║",
+  "██║╚██╗██║██║   ██║██║  ██║",
+  "██║ ╚████║╚██████╔╝██████╔╝",
+  "╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ",
+];
 
 export interface BannerInfo {
   version: string;
