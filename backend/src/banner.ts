@@ -25,19 +25,44 @@ const LOGO: string[] = [
   "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠋⠛⢻⠿⠿⠛⡧⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀",
 ];
 
+/** The same knot, larger, for wide terminals (56 columns by 28 rows). */
+const LOGO_LARGE: string[] = [
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⢀⣀⣁⣘⣈⣁⣉⢘⡁⡃⠙⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡰⣿⢾⡿⣿⣿⢿⡷⣿⢿⠿⡿⣿⢶⡶⡠⢆⠞⠳⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣰⣿⣻⣟⠿⣣⣟⣿⣧⣻⣟⣼⣿⣛⣿⣿⣻⣿⣟⣣⣻⢟⣤⣣⣄⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣯⣻⣿⣽⣯⣿⣽⣯⣿⣿⣽⣿⣿⣿⣿⣯⣿⣽⣯⣿⣽⣽⣯⣛⣽⣯⡀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠀⢀⠀⠀⡀⢀⠀⡀⢀⣐⣛⣺⣗⣿⣿⣿⣟⣿⣻⣟⡽⢿⠛⠓⠛⠛⠛⠛⢿⣺⣟⣟⣻⣻⣟⣿⣻⣟⡟⢂⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣴⣮⣷⣴⣯⠪⠕⠙⢯⠻⣵⣿⣯⣿⣽⣯⣿⣿⣽⣮⣿⣕⡯⠁⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣯⣵⣽⣯⣾⣽⣯⣧⠟⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⣠⢺⡗⣿⣮⣾⡗⣭⢢⣔⣴⣶⢢⡔⣶⢲⡶⡗⣯⠀⠀⠀⠀⠒⠐⣿⢻⣷⣆⣠⠀⠀⠀⠀⠀⠀⠀⠀⠒⣷⣪⢺⡗⠀⠈⠓⠁⠀⠂⠀",
+  "⠀⠀⠀⠀⣠⣮⣿⣽⣯⣿⣿⣽⣯⣿⣽⣯⢿⡿⣽⣯⢿⡽⣍⢈⡉⣅⣠⢀⣤⣼⣯⣿⡽⠋⠉⠉⢱⣦⠀⠀⠀⠀⠀⠀⠉⣿⡽⣽⣯⠀⠀⣉⠈⠁⡁⠀",
+  "⠀⠀⠀⢾⡶⡷⣾⢾⡷⣿⢾⢾⡱⣿⢞⡷⣱⣾⣾⡷⣿⢶⡶⡱⣤⢾⡷⣤⣿⣾⡿⣿⠆⠰⠀⠀⠀⠀⠱⢶⠀⠀⠀⠀⠰⣷⢾⢾⡷⣠⢆⡴⠀⠀⠆⠰",
+  "⠀⢀⣿⣿⣿⣿⡿⣻⣟⢾⡷⣿⢞⣶⡱⠛⠟⠉⣹⣏⢿⣿⣿⣮⡿⣿⣏⢿⣿⣿⣿⣿⣷⣿⢾⡁⡀⢀⠀⠀⠙⢆⣀⢀⣿⣿⣷⣿⣿⣶⣿⣏⢀⡀⠁⠀",
+  "⢠⡾⣿⢾⡷⡳⣿⢾⡷⣻⢟⠾⠛⠁⠀⠀⠀⢸⢾⡳⣻⢞⣿⡷⣿⣾⡇⠀⠀⠙⠳⠿⢞⡷⣻⣿⣦⡰⠀⠀⠀⠀⠙⢾⣷⡿⢾⣾⡷⣿⢾⡇⠀⠴⠀⠀",
+  "⢸⣿⣿⣻⣟⢟⡣⣻⣟⣼⡃⠓⠀⠀⠀⠀⢘⣻⡻⢟⢼⡻⣿⣿⣿⡋⠀⠀⠀⠀⠀⠀⠀⠙⢿⡧⡻⣿⣿⣣⣛⢘⣿⡿⣟⣟⣻⣻⣟⠿⡃⣀⠘⠂⠀⠀",
+  "⢸⡯⣿⢝⣯⡫⣟⢽⣿⣿⠁⠀⠀⠀⠀⠀⠠⣿⣽⡯⣿⣽⣿⣯⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠽⠯⣻⢿⣽⡿⣿⢽⡯⣿⣽⣽⡫⠀⠅⠤⠀⠀⠀⠀",
+  "⣸⣟⣽⣫⣟⣝⣯⣻⣟⣿⠀⠀⠀⠀⠀⠀⢰⣿⣻⣟⣿⣫⣿⣟⣿⡃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢘⣽⣿⣿⣟⣿⣻⣟⣿⣫⣻⣝⠀⣣⠖⠀⠀⠀⠀",
+  "⠉⢩⣻⣝⣭⣫⣝⡽⢯⣿⣷⣤⡀⠀⠀⠀⢠⣽⣿⣯⣿⣽⣭⣯⣿⡅⠀⠀⠀⠀⠀⠀⠀⠀⡀⢀⣴⣯⣯⣽⣭⣯⣿⣝⣯⣫⠝⣅⣨⠛⠁⠀⠀⠀⠀⠀",
+  "⠀⠀⣿⢪⡖⡕⣮⢢⡔⣿⣿⡛⠓⣤⠀⠀⠘⣿⣾⡗⣿⣾⣟⣷⣿⠃⠀⠀⠀⠀⠀⣤⢠⣶⣿⣿⢫⣵⣿⢺⣲⡗⣯⢪⡗⣵⢢⠚⠁⣤⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠈⠹⣯⣮⡵⣽⣯⢾⡽⣿⣦⣤⡅⣨⣼⣿⣽⣿⣿⣽⣿⣯⣿⣵⣦⣤⣴⣼⣿⣿⣽⣿⣿⣿⣿⣯⣿⣿⣭⣯⡷⣵⣯⢮⡁⣅⠀⠀⡄⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠷⢾⢾⡷⣿⠚⢾⡿⣿⢾⡇⣵⣾⢾⡷⣿⢮⠶⡷⣿⣾⡷⣿⣿⢿⣷⣿⢿⡷⣿⣯⢾⡷⣷⣾⠿⣷⣿⢾⡷⡷⠆⢾⡇⠀⠆⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠹⣏⢾⡷⣿⢎⠶⡹⣿⢿⣿⡹⢏⣿⣿⠋⢈⣿⣹⣏⣿⣿⣿⣟⣿⡻⣿⣾⡿⡳⢎⢿⡻⠿⠉⣿⣹⣏⣿⡿⣻⣏⠀⠁⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠾⠱⣛⢞⡷⣿⢏⣾⡷⣻⢾⠶⠀⠙⢿⡷⣿⣏⢾⡷⣛⢾⡿⡹⠿⠞⠁⠀⠀⠀⠀⣿⢾⣿⣿⢾⢾⡷⠀⠆⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⠘⠣⢻⣟⣿⣻⣿⣜⣁⡘⣛⣼⣿⣋⣘⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⢀⡿⣃⣿⣿⣻⣿⠇⠀⡃⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠩⣿⢽⣿⡯⣿⢥⡬⣻⣍⠽⠫⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡨⣄⢽⡯⣿⣿⠅⠀⠀⠅⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⡻⣟⣟⣿⣻⣟⣿⣿⡀⠘⠉⡛⠓⣄⣀⣀⣀⣐⣣⣺⣟⣿⣫⣟⠿⠋⠀⢀⠿⠃⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠑⢭⣫⣿⣝⣯⣿⣿⣽⣦⣀⠁⠀⠉⠛⠝⢫⣿⣽⣭⣽⠗⠙⠋⠀⠀⠀⣨⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⣯⢪⡗⣽⣯⢺⡕⣭⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠊⠁⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠑⢯⣿⡷⣽⢮⢶⡵⢏⢀⠀⠀⢠⠈⠁⣄⠀⠀⡄⢩⢈⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠋⢾⡵⣽⢦⡴⣵⣤⢦⡴⡴⠆⠶⡴⣤⠆⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⣉⠞⠳⠱⠎⢈⡱⠉⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+];
+
 const LOGO_WIDTH = 34;
+const LOGO_LARGE_WIDTH = 56;
+/** The large knot plus the text column needs about this much room. */
+const MIN_WIDTH_FOR_LARGE_LOGO = 104;
 /** Below this width the logo would wrap and wreck the layout, so only the text is shown. */
 const MIN_WIDTH_FOR_LOGO = 78;
-
-/** "NOD" in chunky block letters, two terminal cells per pixel so it is as wide as it is tall. */
-const GLYPHS: Record<string, string[]> = {
-  N: ["#   #", "##  #", "# # #", "#  ##", "#   #"],
-  O: [" ### ", "#   #", "#   #", "#   #", " ### "],
-  D: ["#### ", "#   #", "#   #", "#   #", "#### "],
-};
-const WORDMARK: string[] = Array.from({ length: 5 }, (_, row) =>
-  [..."NOD"].map((ch) => [...GLYPHS[ch][row]].map((px) => (px === "#" ? "██" : "  ")).join("")).join("   ").trimEnd(),
-);
 
 export interface BannerInfo {
   version: string;
@@ -68,8 +93,7 @@ export function renderBanner(info: BannerInfo, opts: { color: boolean; columns?:
 
   const urls = [`http://localhost:${info.port}`, ...info.lan.map((a) => `http://${a}:${info.port}`)];
   const text: string[] = [
-    ...(opts.columns === undefined || opts.columns >= 40 ? WORDMARK.map((l) => paint(BOLD + LAVENDER, l)) : [paint(BOLD + LAVENDER, "N O D")]),
-    "",
+    paint(BOLD + LAVENDER, "N O D"),
     paint(DIM, "Nothing moves without your Nod."),
     "",
     `${paint(DIM, "version  ")} ${info.version}`,
@@ -85,10 +109,13 @@ export function renderBanner(info: BannerInfo, opts: { color: boolean; columns?:
 
   const lines: string[] = [];
   if (withLogo) {
-    const rows = Math.max(LOGO.length, text.length);
-    const top = Math.max(0, Math.floor((LOGO.length - text.length) / 2));
+    const large = columns >= MIN_WIDTH_FOR_LARGE_LOGO;
+    const logo = large ? LOGO_LARGE : LOGO;
+    const width = large ? LOGO_LARGE_WIDTH : LOGO_WIDTH;
+    const rows = Math.max(logo.length, text.length);
+    const top = Math.max(0, Math.floor((logo.length - text.length) / 2));
     for (let i = 0; i < rows; i++) {
-      const art = (LOGO[i] ?? "").padEnd(LOGO_WIDTH, " ");
+      const art = (logo[i] ?? "").padEnd(width, " ");
       const t = text[i - top] ?? "";
       lines.push(`${paint(LAVENDER, art)}  ${t}`.trimEnd());
     }
