@@ -4,6 +4,7 @@ import {
   VersionedTransaction,
   type TransactionInstruction,
 } from "@solana/web3.js";
+import { parseJupiterInstruction, type JupiterSwap } from "./jupiter";
 import { PROGRAMS } from "./programs";
 
 export type DecodedInstruction =
@@ -17,7 +18,8 @@ export type DecodedInstruction =
   | { kind: "create-ata"; payer: string; ata: string; wallet: string; mint: string }
   | { kind: "compute-budget"; detail: string }
   | { kind: "memo"; text: string }
-  | { kind: "swap"; program: string; accounts: number }
+  | { kind: "swap"; program: string; accounts: number; swap?: JupiterSwap; unreadable?: string }
+  | { kind: "spl-sync-native"; account: string }
   | { kind: "unknown"; programId: string; accounts: number; dataLength: number };
 
 export interface DecodedTransaction {
@@ -37,7 +39,11 @@ export type RiskCode =
   | "authority-change"
   | "new-recipient"
   | "unusual-amount"
-  | "account-assign";
+  | "account-assign"
+  | "swap-unreadable"
+  | "swap-wrong-authority"
+  | "swap-output-elsewhere"
+  | "high-slippage";
 
 export interface Risk {
   code: RiskCode;
@@ -114,6 +120,7 @@ function decodeInstruction(ix: TransactionInstruction): DecodedInstruction {
         };
       }
       if (tag === 9) return { kind: "spl-close", account: k(0), destination: k(1) };
+      if (tag === 17) return { kind: "spl-sync-native", account: k(0) };
       break;
     }
     case PROGRAMS.ata:
@@ -131,8 +138,12 @@ function decodeInstruction(ix: TransactionInstruction): DecodedInstruction {
     }
     case PROGRAMS.memo:
       return { kind: "memo", text: data.toString("utf8") };
-    case PROGRAMS.jupiter:
-      return { kind: "swap", program: "Jupiter v6", accounts: ix.keys.length };
+    case PROGRAMS.jupiter: {
+      const parsed = parseJupiterInstruction(data, ix.keys.map((x) => x.pubkey.toBase58()));
+      return parsed.ok
+        ? { kind: "swap", program: "Jupiter v6", accounts: ix.keys.length, swap: parsed.swap }
+        : { kind: "swap", program: "Jupiter v6", accounts: ix.keys.length, unreadable: parsed.reason };
+    }
   }
   return { kind: "unknown", programId, accounts: ix.keys.length, dataLength: data.length };
 }
