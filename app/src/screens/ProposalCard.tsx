@@ -113,7 +113,7 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
   }, [proposal.id, refresh]);
 
   const agentName = agents.find((a) => a.id === proposal.agentId)?.name ?? "Agent";
-  const intentCheck = prepared && wallet ? checkIntent(prepared.decoded, wallet, proposal.intent) : undefined;
+  const intentCheck = prepared && wallet ? checkIntent(prepared.decoded, wallet, proposal.intent, prepared.swap?.swap ? { swap: prepared.swap.swap, tokens: prepared.tokens } : undefined) : undefined;
   const sol = prepared?.simulation.deltas.filter((d) => d.kind === "sol") ?? [];
   const tokens = prepared?.simulation.deltas.filter((d) => d.kind === "token") ?? [];
   const mismatch = intentCheck?.status === "mismatch";

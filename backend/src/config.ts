@@ -12,7 +12,7 @@ export const config = {
   firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
   dbPath: process.env.DATABASE_URL ?? "./nod.db",
   keySalt: process.env.AGENT_API_KEY_SALT ?? "change-me",
-  jupiterUrl: process.env.JUPITER_API_URL ?? "https://quote-api.jup.ag/v6",
+  jupiterUrl: process.env.JUPITER_API_URL ?? "https://lite-api.jup.ag/swap/v1",
   defaultAutoLimitUsd: num(process.env.DEFAULT_AUTO_LIMIT_USD, 5),
   defaultHardCapUsd: num(process.env.DEFAULT_HARD_CAP_USD, 500),
   proposalTtlSeconds: num(process.env.PROPOSAL_TTL_SECONDS, 90),

@@ -15,6 +15,15 @@ export interface Intent {
   sol?: number;
   /** The single address that should receive it. */
   recipient?: string;
+  /** For token swaps. Amounts are raw token units, as strings. */
+  swap?: {
+    inputMint: string;
+    outputMint: string;
+    /** What you pay (exact-in swaps). */
+    inAmount?: string;
+    /** The least you accept to receive. The transaction must not allow less. */
+    minOut?: string;
+  };
 }
 
 export interface Proposal {

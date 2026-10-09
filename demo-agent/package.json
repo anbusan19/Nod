@@ -7,6 +7,7 @@
     "pair": "tsx --env-file-if-exists=.env src/pair.ts",
     "payments": "tsx --env-file-if-exists=.env src/payments.ts",
     "tamper": "tsx --env-file-if-exists=.env src/tamper.ts",
+    "swap": "tsx --env-file-if-exists=.env src/swap.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

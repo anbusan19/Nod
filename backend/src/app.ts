@@ -221,7 +221,20 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
         transaction: z.string().min(1),
         reason: z.string().max(280).default(""),
         // What the agent says the transaction does. The phone compares this to the real bytes.
-        intent: z.object({ sol: z.number().positive().optional(), recipient: z.string().max(64).optional() }).optional(),
+        intent: z
+          .object({
+            sol: z.number().positive().optional(),
+            recipient: z.string().max(64).optional(),
+            swap: z
+              .object({
+                inputMint: z.string().max(64),
+                outputMint: z.string().max(64),
+                inAmount: z.string().regex(/^\d+$/).optional(),
+                minOut: z.string().regex(/^\d+$/).optional(),
+              })
+              .optional(),
+          })
+          .optional(),
         // Which cluster the transaction is for. Defaults to the backend's own cluster.
         cluster: z.enum(["devnet", "mainnet-beta"]).optional(),
       })

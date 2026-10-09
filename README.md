@@ -207,9 +207,14 @@ Program IDs are listed from memory. Confirm each against the official docs or an
 
 ### 4. Swaps through Jupiter (trading scenario)
 
-- The demo agent asks the Jupiter quote API for a route, then asks for the swap transaction.
-- The approval card shows: amount in, **minimum amount out**, slippage, route programs, and a quote age countdown.
-- Jupiter liquidity is on **mainnet**, not devnet. For the demo, either use a few dollars of real funds on mainnet, or run the swap scenario as a clearly labeled **mock** on devnet. The demo video must state which one is shown.
+- The demo agent asks Jupiter's quote API for a route, then for the swap transaction (`npm run swap`).
+- The phone reads the `route`, `shared_accounts_route` and `exact_out_route` instructions itself. Layouts were verified against real mainnet transactions (`app/src/solana/__tests__/fixtures/jupiter.json`), and amounts tie out against Jupiter's quote.
+- The approval card shows: what you pay, the **minimum you receive** (computed from the transaction's own quoted amount and slippage, rounded in your favour), the quote, slippage tolerance, platform fee, route steps, quote age, and the programs the simulation actually touched.
+- Wrap/unwrap and account-setup instructions are folded into the swap summary, but only when they involve your own standard token accounts, so nothing can hide behind them.
+- Checks that raise a warning or a danger badge (and require press-and-hold): output paid to an account that is not yours, a swap not authorised by your wallet, slippage above 1% (warn) or 5% (danger), several swaps in one transaction.
+- A Jupiter instruction the phone cannot read (v2 routes, token-ledger variants, unknown layouts) is **blocked**, not guessed at.
+- An agent can state what it claims to swap (`intent.swap`: mints, amount, minimum out). The phone compares that to the real transaction and flags, for example, an agent that promises 1.09 USDC minimum while the transaction accepts far less.
+- Jupiter liquidity is on **mainnet**. Proposals carry a `cluster`. A mainnet proposal opens as a **preview** on a devnet build: it is decoded and shown in full but cannot be signed. To execute a real swap, set `EXPO_PUBLIC_SOLANA_CLUSTER=mainnet-beta`, connect a funded mainnet wallet, and rebuild.
 
 ### 5. On-chain reasons with Memo
 
@@ -468,7 +473,8 @@ SOLANA_RPC_URL=https://api.devnet.solana.com
 FIREBASE_SERVICE_ACCOUNT_JSON=./firebase-service-account.json
 DATABASE_URL=file:./nod.db
 AGENT_API_KEY_SALT=change-me
-JUPITER_API_URL=https://quote-api.jup.ag/v6      # confirm the current endpoint in Jupiter's docs
+JUPITER_API_URL=https://lite-api.jup.ag/swap/v1   # verified working without an API key; the old quote-api.jup.ag/v6 host no longer resolves
+MAINNET_RPC_URL=https://api.mainnet-beta.solana.com
 DEFAULT_AUTO_LIMIT_USD=5
 DEFAULT_HARD_CAP_USD=500
 PROPOSAL_TTL_SECONDS=90
@@ -505,7 +511,10 @@ npm run payments
 # Trading agent: rule-based rebalance (e.g. if allocation drifts more than 5%)
 npm run trader
 
-# Attack scenarios: liar, unknown, delegate, assign, swap-backend (or all)
+# A real Jupiter swap (mainnet preview on a devnet build)
+npm run swap -- 0.01
+
+# Attack scenarios: liar, unknown, delegate, assign, swap-backend, swap-slippage, swap-output (or all)
 npm run tamper -- liar
 ```
 
@@ -572,7 +581,7 @@ Update this table honestly before submitting.
 | Demo payment agent | [x] working against devnet |
 | Tamper demos (blocked programs, delegate, assign, swapped transaction) | [x] confirmed on device |
 | Blockhash refresh before signing | [x] confirmed on device (40s approval on a ~36s blockhash) |
-| Jupiter swap decoding | [ ] |
+| Jupiter swap decoding | [x] tested against real mainnet transactions; device test pending |
 | Squads multisig (tier 3) | [ ] stretch |
 | Squads on-chain spending limits | [ ] stretch |
 | dApp Store listing | [ ] after winners announced |

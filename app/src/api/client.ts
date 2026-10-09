@@ -32,7 +32,7 @@ export interface Proposal {
   tier: "auto" | "nod" | "council" | "block";
   status: ProposalStatus;
   blockReason: string | null;
-  intent: { sol?: number; recipient?: string } | null;
+  intent: import("../solana/intent").Intent | null;
   cluster: "devnet" | "mainnet-beta";
   signature: string | null;
   error: string | null;
