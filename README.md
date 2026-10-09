@@ -500,6 +500,26 @@ Never commit `.env` files, service-account JSON, or keypairs.
 
 ---
 
+## Use it with your own agent
+
+Nod is meant to be used by anyone: install the app, point it at a backend, and connect any agent.
+
+1. **Backend.** Run your own (`docs/DEPLOY.md`: Docker image, HTTPS, persistent disk) or use one someone hosts for you.
+2. **App.** Build or install the Android app. In **Settings → Server** you can point it at any backend.
+3. **Agent.** `npx @nod/sdk pair <CODE> --api https://your-backend` prints an agent key. Then, in your agent:
+
+```ts
+import { Nod, isConfirmed } from "@nod/sdk";
+import { transferSol } from "@nod/sdk/solana";
+
+const nod = new Nod({ apiUrl: process.env.NOD_API_URL!, agentKey: process.env.NOD_AGENT_KEY! });
+const built = await transferSol({ connection, from: USER_WALLET, to: VENDOR, sol: 0.05 });
+const result = await nod.proposeAndWait({ ...built, reason: "Weather API credits" });
+if (isConfirmed(result)) console.log("paid", result.signature);
+```
+
+The SDK covers pairing, proposing, waiting for the decision, retries and idempotency, typed errors, a CLI, and transaction helpers for transfers and Jupiter swaps. Full reference: [`sdk/README.md`](sdk/README.md). It also documents the plain HTTP API for agents not written in JavaScript.
+
 ## Running the demo agent
 
 ```bash

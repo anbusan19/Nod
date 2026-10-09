@@ -15,6 +15,10 @@ agent  ──propose(tx, reason)──▶  Nod backend  ──push──▶  pho
 
 ## Install
 
+> **Not on npm yet.** Until it is published, install from a clone of this repository:
+> `git clone <repo> && cd nod && npm install && npm run build:sdk`, then `npm install /path/to/nod/sdk` in your agent project
+> (or `cd sdk && npm pack` and install the resulting `.tgz`). After publishing, the commands below work as written.
+
 ```bash
 npm install @nod/sdk
 npm install @solana/web3.js   # only if you use the transaction helpers in @nod/sdk/solana
