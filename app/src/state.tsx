@@ -47,7 +47,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         await api.ensureDevice();
         // Earlier builds stored the raw base64 form; normalize it (or drop it if unusable).
-        setWallet(tryNormalizeAddress(await kv.get("walletAddress")));
+        const saved = tryNormalizeAddress(await kv.get("walletAddress"));
+        setWallet(saved);
+        if (saved) api.updateDevice({ wallet: saved }).catch(() => {});
         await refresh();
       } catch (e) {
         setError((e as Error).message);
