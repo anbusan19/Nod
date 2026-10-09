@@ -6,10 +6,14 @@ import type { Cluster } from "../config";
 import { connectionFor } from "./connection";
 import { kv } from "../storage";
 
+// How Nod introduces itself to the wallet app (shown on Phantom's connect screen).
+// `uri` is kept as the repository for now. `icon` is the favicon.ico at the repository root, as an
+// absolute address, because the wallet fetches it without a login: it appears once the repository is
+// public. When the product website exists, point both `uri` and `icon` there.
 const IDENTITY = {
   name: "Nod",
   uri: "https://github.com/anbusan19/nod",
-  icon: "favicon.ico",
+  icon: "https://raw.githubusercontent.com/anbusan19/Nod/main/favicon.ico",
 };
 
 const cluster = config.cluster === "mainnet-beta" ? "mainnet-beta" : "devnet";
