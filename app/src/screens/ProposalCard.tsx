@@ -2,9 +2,11 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { api, type Proposal } from "../api/client";
+import { HoldButton } from "../components/HoldButton";
 import { Badge, Button, Card, Mono, T } from "../components/ui";
 import { approve, prepare, type Prepared } from "../solana/approve";
 import { formatSol, formatTokenAmount, shorten, type DecodedInstruction } from "../solana/decode";
+import { holdReasons, solOutflow } from "../solana/friction";
 import { checkIntent } from "../solana/intent";
 import { PROGRAM_NAMES } from "../solana/programs";
 import { useApp } from "../state";
@@ -109,9 +111,13 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
 
   const agentName = agents.find((a) => a.id === proposal.agentId)?.name ?? "Agent";
   const intentCheck = prepared && wallet ? checkIntent(prepared.decoded, wallet, proposal.intent) : undefined;
-  const mismatch = intentCheck?.status === "mismatch";
   const sol = prepared?.simulation.deltas.filter((d) => d.kind === "sol") ?? [];
   const tokens = prepared?.simulation.deltas.filter((d) => d.kind === "token") ?? [];
+  const mismatch = intentCheck?.status === "mismatch";
+  const autoLimit = agents.find((a) => a.id === proposal.agentId)?.policy?.autoLimitLamports;
+  const simOutflow = sol.reduce((max, d) => (d.delta < 0n && -d.delta > max ? -d.delta : max), 0n);
+  const outflow = prepared && wallet ? (() => { const d = solOutflow(prepared.decoded, wallet); return d > simOutflow ? d : simOutflow; })() : 0n;
+  const reasons = prepared ? holdReasons({ intent: intentCheck, risks: prepared.risks, outflowLamports: outflow, autoLimitLamports: autoLimit }) : [];
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
@@ -216,8 +222,18 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
 
       {actionable && !confirming && (
         <View style={{ gap: 10 }}>
+          {reasons.length > 0 && (
+            <Card style={{ borderColor: c.warn, backgroundColor: c.warnBg, gap: 4 }}>
+              <T size={13} weight="semibold" style={{ color: c.warn }}>Extra care needed</T>
+              {reasons.map((r) => (
+                <T key={r} size={13} style={{ color: c.warn }}>{r}</T>
+              ))}
+            </Card>
+          )}
           {mismatch ? (
             <Button title="Review and approve anyway" kind="secondary" onPress={() => setConfirming(true)} disabled={!prepared || prepared.blockers.length > 0} />
+          ) : reasons.length > 0 ? (
+            <HoldButton title="Hold to approve" onConfirm={onApprove} loading={busy} disabled={!prepared || prepared.blockers.length > 0} />
           ) : (
             <Button title="Approve" onPress={onApprove} loading={busy} disabled={!prepared || prepared.blockers.length > 0} />
           )}
@@ -232,7 +248,7 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
             The agent described this transaction differently from what it does.
             {sol[0] && sol[0].delta < 0n ? ` It will move ${formatSol(-sol[0].delta)} out of your wallet.` : ""}
           </T>
-          <Button title="Send anyway" kind="danger" onPress={onApprove} loading={busy} />
+          <HoldButton title="Hold to send anyway" onConfirm={onApprove} loading={busy} />
           <Button title="Go back" kind="secondary" onPress={() => setConfirming(false)} disabled={busy} />
         </Card>
       )}

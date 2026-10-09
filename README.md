@@ -356,7 +356,7 @@ export const fonts = {
 
 - **Clarity over decoration.** The approval card is the product, so nothing competes with the amount, the recipient and the expiry.
 - **Risk is always visible.** Unknown programs, new recipients and authority changes get a distinct badge, never hidden in a details view.
-- **Deliberate approval.** Approving uses an intentional gesture plus a haptic, so it can't be done by accident from the lock screen.
+- **Deliberate approval.** Ordinary payments approve with a tap plus the device-auth prompt. When something is off (the transaction doesn't match what the agent said, it carries a high-risk badge, or the amount is large for that agent) approval requires pressing and holding for 1.5 seconds with haptic ticks, so a reflex tap can't confirm it. "Large" means more than 3x the agent's auto-approve limit, with a 0.05 SOL floor. Screen-reader users confirm with a normal activation instead.
 - **Motion with a purpose.** Animation is used for the expiry countdown and state changes (approved, rejected, expired), not for decoration.
 - **Dark and light themes** follow the system setting.
 
