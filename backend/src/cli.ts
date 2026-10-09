@@ -67,6 +67,8 @@ set("AGENT_API_KEY_SALT", salt);
 set("SOLANA_CLUSTER", cluster);
 const firebase = join(dataDir, "firebase-service-account.json");
 if (existsSync(firebase)) set("FIREBASE_SERVICE_ACCOUNT_JSON", firebase);
+// Push is on if credentials were found in the data folder or supplied through the environment.
+const pushOn = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
 
 const lan = Object.values(networkInterfaces())
   .flat()
@@ -76,7 +78,7 @@ const lan = Object.values(networkInterfaces())
 console.log(`
 Nod backend  (${cluster})
   data folder   ${dataDir}
-  push          ${existsSync(firebase) || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 ? "on" : "off (optional, see --help)"}
+  push          ${pushOn ? "on" : "off (optional, see --help)"}
 
 Connect the Nod app to this server:
   same Wi-Fi, debug builds   ${lan.length ? lan.map((a) => `http://${a}:${port}`).join("  ") : "(no network address found)"}
