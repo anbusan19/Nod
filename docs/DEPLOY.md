@@ -1,6 +1,12 @@
-# Deploying the Nod backend
+# Run your own Nod backend
 
-The backend is a single small Node service with a SQLite file. Anyone who runs it can have their own Nod: the app talks to whatever backend it is built to use, and agents pair with it through the SDK.
+Nod is composable: there is **no central server**. You run the small Nod backend (one Node service and one SQLite file), your phone's app connects to it, and your agents connect to it through the SDK. Nobody else is in the middle, and the backend never holds your keys.
+
+```
+ your agent ── nod-sdk ──▶ YOUR backend ◀── Nod app on your phone ──▶ your wallet app ──▶ Solana
+```
+
+One backend can serve several people (each phone sees only its own agents), so a team can share one, or everyone can run their own.
 
 > **Status:** the container files were written and checked step by step (install, build, production start, safety guards) but the image itself has **not** been built with Docker yet. The first `docker build` is part of your verification.
 
@@ -57,25 +63,29 @@ nod.example.com {
 }
 ```
 
-## 3. Point the app at it
+## 3. Reach it from your phone (this needs HTTPS)
 
-The mobile app reads its server address when it is built:
+The app has no built-in server. On first launch it asks for yours, and you can change it any time under **Settings → Server**. Release builds accept only `https://` addresses, so your backend needs a TLS address. Pick whichever fits:
 
-```bash
-# app/.env
-EXPO_PUBLIC_API_URL=https://nod.example.com
-EXPO_PUBLIC_SOLANA_CLUSTER=devnet
-```
+| Where it runs | How to get HTTPS |
+|---|---|
+| A VPS or cloud container | Caddy or the platform's own TLS (see above) |
+| A laptop or home server | A tunnel, such as `cloudflared tunnel --url http://localhost:3000`, which prints a public `https://…` address (example only, not tested here), or Tailscale Funnel |
+| Developing with a USB cable | Debug builds also accept `http://`. Run `adb reverse tcp:3000 tcp:3000` and enter `http://localhost:3000` |
 
-Then build the release APK (see the main README). Self-hosters can also change the server later under **Settings → Server** in the app.
+Enter the address in the app. It checks `/health` before switching and refuses anything that does not answer like a Nod backend.
+
+Choose the Solana cluster the app signs for at build time (`EXPO_PUBLIC_SOLANA_CLUSTER`, `devnet` by default).
 
 ## 4. Pair an agent
 
 In the app: **Agents → Show pairing code**. Then:
 
 ```bash
-npx @nod/sdk pair <CODE> --name my-agent --api https://nod.example.com
+npx nod-sdk pair <CODE> --name my-agent --api https://nod.example.com
 ```
+
+The agent only ever needs two things: your backend's address and its own key.
 
 ## Operating it
 

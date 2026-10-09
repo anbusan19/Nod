@@ -1,7 +1,8 @@
 export type Cluster = "devnet" | "mainnet-beta";
 
 export const config = {
-  apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000",
+  /** Optional built-in server. Empty means the app asks the user which Nod backend to use. */
+  apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "",
   cluster: (process.env.EXPO_PUBLIC_SOLANA_CLUSTER ?? "devnet") as Cluster,
   rpcUrl: process.env.EXPO_PUBLIC_SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
   /** A node per cluster, so a transaction can be decoded and simulated on the cluster it targets. */

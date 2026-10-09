@@ -126,7 +126,7 @@ export function Settings() {
           style={{ fontFamily: fonts.mono.regular, fontSize: 13, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
         />
         <Button title="Use this server" kind="secondary" loading={busy} disabled={serverInput.trim() === server} onPress={() => saveServer(false)} />
-        <Button title="Reset to built-in server" kind="secondary" disabled={busy} onPress={() => saveServer(true)} />
+        {config.apiUrl ? <Button title="Reset to built-in server" kind="secondary" disabled={busy} onPress={() => saveServer(true)} /> : null}
       </Card>
 
       <Card style={{ gap: 6 }}>

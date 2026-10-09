@@ -7,6 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { T } from "./src/components/ui";
 import { onProposalOpened, registerForPush } from "./src/push/notifications";
 import { Agents } from "./src/screens/Agents";
+import { ConnectServer } from "./src/screens/ConnectServer";
 import { Inbox } from "./src/screens/Inbox";
 import { ProposalCard } from "./src/screens/ProposalCard";
 import { Settings } from "./src/screens/Settings";
@@ -20,14 +21,14 @@ type Tab = (typeof TABS)[number];
 
 function Shell() {
   const c = useColors();
-  const { ready, proposals, openProposalId, openProposal } = useApp();
+  const { ready, needsServer, proposals, openProposalId, openProposal } = useApp();
   const [tab, setTab] = useState<Tab>("Approvals");
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || needsServer) return;
     registerForPush();
     return onProposalOpened(openProposal);
-  }, [ready, openProposal]);
+  }, [ready, needsServer, openProposal]);
 
   // The Android back button closes an open approval card instead of leaving the app.
   useEffect(() => {
@@ -42,6 +43,8 @@ function Shell() {
   if (!ready) {
     return <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}><ActivityIndicator /></View>;
   }
+
+  if (needsServer) return <ConnectServer />;
 
   const open = openProposalId ? proposals.find((p) => p.id === openProposalId) : undefined;
   if (open) return <ProposalCard key={open.id} proposal={open} onClose={() => openProposal(undefined)} />;

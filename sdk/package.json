@@ -1,5 +1,5 @@
 {
-  "name": "@nod/sdk",
+  "name": "nod-sdk",
   "version": "0.2.0",
   "description": "Connect any AI agent to Nod: propose Solana transactions that a human approves on their phone.",
   "license": "MIT",

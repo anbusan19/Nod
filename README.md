@@ -504,13 +504,13 @@ Never commit `.env` files, service-account JSON, or keypairs.
 
 Nod is meant to be used by anyone: install the app, point it at a backend, and connect any agent.
 
-1. **Backend.** Run your own (`docs/DEPLOY.md`: Docker image, HTTPS, persistent disk) or use one someone hosts for you.
-2. **App.** Build or install the Android app. In **Settings → Server** you can point it at any backend.
-3. **Agent.** `npx @nod/sdk pair <CODE> --api https://your-backend` prints an agent key. Then, in your agent:
+1. **Backend.** Run your own, or share one with your team (`docs/DEPLOY.md`: Docker image, HTTPS, persistent disk). There is no central Nod server.
+2. **App.** Install the Android app. On first launch it asks which backend to use, and you can change it any time under **Settings → Server**.
+3. **Agent.** `npx nod-sdk pair <CODE> --api https://your-backend` prints an agent key. Then, in your agent:
 
 ```ts
-import { Nod, isConfirmed } from "@nod/sdk";
-import { transferSol } from "@nod/sdk/solana";
+import { Nod, isConfirmed } from "nod-sdk";
+import { transferSol } from "nod-sdk/solana";
 
 const nod = new Nod({ apiUrl: process.env.NOD_API_URL!, agentKey: process.env.NOD_AGENT_KEY! });
 const built = await transferSol({ connection, from: USER_WALLET, to: VENDOR, sol: 0.05 });
@@ -543,7 +543,7 @@ The trading agent uses a deliberately simple rule. Nod demonstrates the **approv
 Example SDK usage:
 
 ```ts
-import { Nod } from "@nod/sdk";
+import { Nod } from "nod-sdk";
 
 const nod = new Nod({ apiUrl: process.env.NOD_API_URL!, agentKey: process.env.NOD_AGENT_KEY! });
 

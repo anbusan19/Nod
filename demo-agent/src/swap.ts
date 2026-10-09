@@ -1,7 +1,7 @@
 // A real Jupiter swap, proposed honestly. Usage: npm run swap -- [solAmount]
 // Jupiter liquidity is on mainnet, so the proposal is for mainnet. Nod on a devnet build decodes it as a
 // preview but will not sign; point Nod at mainnet (and use a funded mainnet wallet) to execute it.
-import { Nod } from "@nod/sdk";
+import { Nod } from "nod-sdk";
 import { getQuote, getSwapTransaction, routeLabels, USDC, WSOL } from "./jupiter.js";
 import { required } from "./env.js";
 

@@ -1,4 +1,4 @@
-# @nod/sdk
+# nod-sdk
 
 Connect any AI agent to **Nod**. Your agent proposes a Solana transaction; a person sees what it *really* does on their phone and approves it with one deliberate tap. The agent never holds the key that moves the funds.
 
@@ -20,8 +20,8 @@ agent  ──propose(tx, reason)──▶  Nod backend  ──push──▶  pho
 > (or `cd sdk && npm pack` and install the resulting `.tgz`). After publishing, the commands below work as written.
 
 ```bash
-npm install @nod/sdk
-npm install @solana/web3.js   # only if you use the transaction helpers in @nod/sdk/solana
+npm install nod-sdk
+npm install @solana/web3.js   # only if you use the transaction helpers in nod-sdk/solana
 ```
 
 ## Quickstart (about two minutes)
@@ -31,7 +31,7 @@ npm install @solana/web3.js   # only if you use the transaction helpers in @nod/
 **2. Pair your agent** (the code lasts 5 minutes and works once):
 
 ```bash
-npx @nod/sdk pair AB12CD34 --name my-agent --api https://your-nod-backend.example.com
+npx nod-sdk pair AB12CD34 --name my-agent --api https://your-nod-backend.example.com
 # Paired agent 1e2f…
 # NOD_API_URL=https://your-nod-backend.example.com
 # NOD_AGENT_KEY=nodk_…        ← keep this secret
@@ -40,8 +40,8 @@ npx @nod/sdk pair AB12CD34 --name my-agent --api https://your-nod-backend.exampl
 **3. Propose a payment:**
 
 ```ts
-import { Nod, isConfirmed } from "@nod/sdk";
-import { transferSol } from "@nod/sdk/solana";
+import { Nod, isConfirmed } from "nod-sdk";
+import { transferSol } from "nod-sdk/solana";
 import { Connection } from "@solana/web3.js";
 
 const nod = new Nod({ apiUrl: process.env.NOD_API_URL!, agentKey: process.env.NOD_AGENT_KEY! });
@@ -107,7 +107,7 @@ Rejection, expiry and blocks are **normal outcomes**, so they are returned, not 
 
 The transaction must be **unsigned**, with the **user's wallet as fee payer**. The user's wallet signs it; your agent never does. A blockhash is attached again right before signing, so you don't need to worry about it expiring while the user decides.
 
-### Transaction helpers: `@nod/sdk/solana`
+### Transaction helpers: `nod-sdk/solana`
 
 ```ts
 transferSol({ connection, from, to, sol, cluster? })

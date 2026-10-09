@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@nod/sdk": "*",
+    "nod-sdk": "*",
     "@solana/web3.js": "^1.99.0"
   },
   "devDependencies": {

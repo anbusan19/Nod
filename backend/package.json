@@ -1,5 +1,5 @@
 {
-  "name": "@nod/backend",
+  "name": "nod-backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",

@@ -1,4 +1,4 @@
-import { Nod } from "@nod/sdk";
+import { Nod } from "nod-sdk";
 import { Connection, Keypair, PublicKey, SystemProgram, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { required } from "./env.js";
 

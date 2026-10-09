@@ -1,4 +1,4 @@
-import { Nod } from "@nod/sdk";
+import { Nod } from "nod-sdk";
 import { required } from "./env.js";
 
 // usage: npm run pair -- <CODE> [agent-name]

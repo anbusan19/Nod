@@ -1,6 +1,6 @@
 // Attack scenarios that show where Nod stops a bad agent. Usage:
 //   npm run tamper -- <liar|unknown|delegate|assign|swap-backend|all>
-import { Nod, type Proposal } from "@nod/sdk";
+import { Nod, type Proposal } from "nod-sdk";
 import {
   Connection,
   Keypair,

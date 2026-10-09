@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, type Agent, type Proposal } from "./api/client";
+import { api, getServerUrl, type Agent, type Proposal } from "./api/client";
 import { tryNormalizeAddress } from "./solana/address";
 import { decodeTransaction, deserialize } from "./solana/decode";
 import { registerForPush } from "./push/notifications";
@@ -8,6 +8,8 @@ import { kv } from "./storage";
 
 interface AppState {
   ready: boolean;
+  /** True until the user has told the app which Nod backend to use. */
+  needsServer: boolean;
   error?: string;
   wallet?: string;
   proposals: Proposal[];
@@ -28,6 +30,7 @@ export const useApp = () => useContext(Ctx);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [needsServer, setNeedsServer] = useState(false);
   const [error, setError] = useState<string>();
   const [wallet, setWallet] = useState<string>();
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -48,6 +51,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
+        if (!(await getServerUrl())) {
+          setNeedsServer(true);
+          return;
+        }
         await api.ensureDevice();
         // Earlier builds stored the raw base64 form; normalize it (or drop it if unusable).
         const saved = tryNormalizeAddress(await kv.get("walletAddress"));
@@ -63,9 +70,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
+    if (needsServer) return;
     const t = setInterval(refresh, 4000);
     return () => clearInterval(t);
-  }, [refresh]);
+  }, [refresh, needsServer]);
 
   const connect = useCallback(async () => {
     const s = await connectWallet();
@@ -82,6 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const changeServer = useCallback(
     async (url?: string) => {
       await api.setServer(url);
+      setNeedsServer(!(await getServerUrl()));
       setProposals([]);
       setAgents([]);
       const saved = tryNormalizeAddress(await kv.get("walletAddress"));
@@ -110,8 +119,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [agents, proposals]);
 
   const value = useMemo(
-    () => ({ ready, error, wallet, proposals, agents, openProposalId, openProposal, refresh, connect, disconnect, changeServer, knownRecipients }),
-    [ready, error, wallet, proposals, agents, openProposalId, refresh, connect, disconnect, changeServer, knownRecipients],
+    () => ({ ready, needsServer, error, wallet, proposals, agents, openProposalId, openProposal, refresh, connect, disconnect, changeServer, knownRecipients }),
+    [ready, needsServer, error, wallet, proposals, agents, openProposalId, refresh, connect, disconnect, changeServer, knownRecipients],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
