@@ -29,6 +29,7 @@ const config: ExpoConfig = {
     "expo-secure-store",
     ["expo-local-authentication", { faceIDPermission: "Nod uses biometrics to confirm approvals." }],
     "expo-notifications",
+    "./plugins/withReleaseSigning",
     ["expo-build-properties", { android: { minSdkVersion: 26 } }],
   ],
 };
