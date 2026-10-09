@@ -1,6 +1,8 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { api } from "../api/client";
+import { api, getServerUrl } from "../api/client";
+import { kv } from "../storage";
+import { decidePushStatus, type PushStatus } from "./status";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,11 +26,24 @@ export async function registerForPush(): Promise<{ ok: boolean; reason?: string 
     if (!perm.granted) return { ok: false, reason: "Notification permission denied" };
     const token = await Notifications.getDevicePushTokenAsync();
     await api.updateDevice({ fcmToken: String(token.data) });
+    await kv.set("pushServer", await getServerUrl()); // remember which backend knows this phone's push token
     return { ok: true };
   } catch (e) {
     // Most commonly: no google-services.json in this build.
     return { ok: false, reason: (e as Error).message };
   }
+}
+
+/** Whether push is working for the backend in use right now. */
+export async function getPushStatus(): Promise<PushStatus> {
+  if (Platform.OS !== "android") return "off";
+  const perm = await Notifications.getPermissionsAsync();
+  return decidePushStatus({
+    granted: perm.granted,
+    canAskAgain: perm.canAskAgain,
+    registeredServer: await kv.get("pushServer"),
+    currentServer: await getServerUrl(),
+  });
 }
 
 /** Calls back with the proposal id from a tapped notification (data-only payload). */

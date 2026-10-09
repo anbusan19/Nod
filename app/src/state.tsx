@@ -95,7 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setAgents([]);
       const saved = tryNormalizeAddress(await kv.get("walletAddress"));
       if (saved) api.updateDevice({ wallet: saved }).catch(() => {});
-      registerForPush().catch(() => {});
+      await registerForPush().catch(() => {}); // the new server needs this phone's push token too
       await refresh();
     },
     [refresh],

@@ -4,9 +4,11 @@ import { ScrollView, View } from "react-native";
 import { getServerUrl } from "../api/client";
 import { inspectServer, parseServerUrl } from "../api/server";
 import { fonts } from "../theme/fonts";
-import { Button, Card, Mono, T } from "../components/ui";
+import { Badge, Button, Card, Mono, T } from "../components/ui";
 import { getAuthMethod } from "../security/biometric";
-import { registerForPush } from "../push/notifications";
+import { Linking } from "react-native";
+import { getPushStatus, registerForPush } from "../push/notifications";
+import type { PushStatus } from "../push/status";
 import { config } from "../config";
 import { useApp } from "../state";
 import { kv } from "../storage";
@@ -21,6 +23,12 @@ export function Settings() {
   const [busy, setBusy] = useState(false);
   const [pref, setPref] = useState<ThemePref>("system");
   const scroller = useRef<ScrollView>(null);
+  const [push, setPush] = useState<PushStatus | undefined>();
+  const refreshPush = () => getPushStatus().then(setPush).catch(() => setPush("off"));
+
+  useEffect(() => {
+    refreshPush();
+  }, [server]);
 
   useEffect(() => {
     getServerUrl().then((u) => { setServer(u); setServerInput(u); }).catch(() => {});
@@ -98,17 +106,34 @@ export function Settings() {
       </Card>
 
       <Card style={{ gap: 10 }}>
-        <T weight="semibold">Notifications</T>
-        <T size={13} muted>Needed to be alerted when an agent wants your approval.</T>
-        <Button
-          title="Enable push"
-          kind="secondary"
-          loading={busy}
-          onPress={() => run(async () => {
-            const r = await registerForPush();
-            return r.ok ? "Push enabled." : `Push unavailable: ${r.reason}`;
-          })}
-        />
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <T weight="semibold">Notifications</T>
+          {push === "on" && <Badge label="✓ On" tone="ok" />}
+        </View>
+        {push === "on" ? (
+          <T size={13} muted>You'll be alerted on the lock screen when an agent needs your approval.</T>
+        ) : push === "blocked" ? (
+          <>
+            <T size={13} muted>Notifications are blocked for Nod in Android. Allow them to be alerted when an agent needs your approval.</T>
+            <Button title="Open Android settings" kind="secondary" onPress={() => Linking.openSettings()} />
+          </>
+        ) : (
+          <>
+            <T size={13} muted>Needed to be alerted when an agent wants your approval.</T>
+            <Button
+              title="Enable push"
+              kind="secondary"
+              loading={busy}
+              onPress={() =>
+                run(async () => {
+                  const r = await registerForPush();
+                  await refreshPush();
+                  return r.ok ? "Push enabled." : `Push unavailable: ${r.reason}`;
+                })
+              }
+            />
+          </>
+        )}
       </Card>
 
       <Card style={{ gap: 10 }}>
