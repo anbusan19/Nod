@@ -27,6 +27,7 @@ export interface Proposal {
   status: ProposalStatus;
   blockReason: string | null;
   intent: Intent | null;
+  cluster: "devnet" | "mainnet-beta";
   signature: string | null;
   error: string | null;
   createdAt: number;
@@ -77,7 +78,7 @@ export class Nod {
   }
 
   /** Submit a base64-serialized Solana transaction for approval. */
-  propose(input: { transaction: string; reason?: string; intent?: Intent }): Promise<Proposal> {
+  propose(input: { transaction: string; reason?: string; intent?: Intent; cluster?: "devnet" | "mainnet-beta" }): Promise<Proposal> {
     return this.req("POST", "/v1/proposals", input);
   }
 

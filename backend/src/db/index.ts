@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS proposals (
   status TEXT NOT NULL,
   block_reason TEXT,
   intent TEXT,
+  cluster TEXT NOT NULL DEFAULT 'devnet',
   lamports INTEGER NOT NULL DEFAULT 0,
   signature TEXT,
   error TEXT,
@@ -63,5 +64,6 @@ export function openDb(path: string): DB {
   // Databases created before `intent` existed need the column added.
   const cols = db.prepare("PRAGMA table_info(proposals)").all() as Array<{ name: string }>;
   if (!cols.some((c) => c.name === "intent")) db.exec("ALTER TABLE proposals ADD COLUMN intent TEXT");
+  if (!cols.some((c) => c.name === "cluster")) db.exec("ALTER TABLE proposals ADD COLUMN cluster TEXT NOT NULL DEFAULT 'devnet'");
   return db;
 }

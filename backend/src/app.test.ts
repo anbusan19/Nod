@@ -9,6 +9,7 @@ const payer = Keypair.generate();
 const dest = Keypair.generate().publicKey;
 
 const FRESH = Keypair.generate().publicKey.toBase58();
+const FRESH_MAINNET = Keypair.generate().publicKey.toBase58();
 let t = 1_000_000;
 let push: LogPushSender;
 let app: ReturnType<typeof buildApp>;
@@ -33,7 +34,7 @@ async function setup() {
 beforeEach(() => {
   t = 1_000_000;
   push = new LogPushSender();
-  app = buildApp({ db: openDb(":memory:"), push, now: () => t, getBlockhash: async () => FRESH });
+  app = buildApp({ db: openDb(":memory:"), push, now: () => t, getBlockhash: async (cluster) => (cluster === "mainnet-beta" ? FRESH_MAINNET : FRESH) });
 });
 
 describe("api", () => {
@@ -61,6 +62,17 @@ describe("api", () => {
     // the result endpoint now expects the new hash
     const ok = await json("POST", `/v1/proposals/${p.id}/result`, dev.deviceToken, { status: "confirmed", signature: "s", txHash: r.body.txHash });
     expect(ok.status).toBe(200);
+  });
+
+  it("tracks the cluster per proposal and refreshes from that cluster's node", async () => {
+    const { dev, agent } = await setup();
+    const a = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;
+    expect(a.cluster).toBe("devnet");
+    const b = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000), cluster: "mainnet-beta" })).body;
+    expect(b.cluster).toBe("mainnet-beta");
+    const r = (await json("POST", `/v1/proposals/${b.id}/refresh`, dev.deviceToken)).body;
+    expect(VersionedTransaction.deserialize(Buffer.from(r.transaction, "base64")).message.recentBlockhash).toBe(FRESH_MAINNET);
+    expect((await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000), cluster: "moon" })).status).toBe(400);
   });
 
   it("refuses to refresh a transaction that is no longer awaiting a human", async () => {

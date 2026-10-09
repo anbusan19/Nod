@@ -39,11 +39,15 @@ interface Deps {
   db: DB;
   push: PushSender;
   now?: () => number;
-  /** Source of a fresh recent blockhash. Defaults to the configured RPC node. */
-  getBlockhash?: () => Promise<string>;
+  /** Source of a fresh recent blockhash for a cluster. Defaults to that cluster's RPC node. */
+  getBlockhash?: (cluster: string) => Promise<string>;
 }
 
-const rpcBlockhash = async () => (await new Connection(config.rpcUrl, "confirmed").getLatestBlockhash()).blockhash;
+const rpcBlockhash = async (cluster: string) => {
+  const url = config.rpcUrls[cluster];
+  if (!url) throw new Error(`no RPC configured for cluster ${cluster}`);
+  return (await new Connection(url, "confirmed").getLatestBlockhash()).blockhash;
+};
 
 export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash }: Deps) {
   const app = Fastify({ logger: false });
@@ -57,6 +61,16 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     } catch {
       done(Object.assign(new Error("invalid JSON body"), { statusCode: 400 }), undefined);
     }
+  });
+
+  // Invalid request bodies are the caller's fault: answer 400 with the reason, not a 500.
+  app.setErrorHandler((err: any, _req, reply) => {
+    if (err instanceof z.ZodError) {
+      return reply.code(400).send({ error: "invalid request", issues: err.issues.map((i) => `${i.path.join(".")}: ${i.message}`) });
+    }
+    const status = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
+    if (status === 500) console.error("[error]", err);
+    return reply.code(status).send({ error: status === 500 ? "internal error" : err.message });
   });
 
   // ---- auth helpers -------------------------------------------------------
@@ -208,6 +222,8 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
         reason: z.string().max(280).default(""),
         // What the agent says the transaction does. The phone compares this to the real bytes.
         intent: z.object({ sol: z.number().positive().optional(), recipient: z.string().max(64).optional() }).optional(),
+        // Which cluster the transaction is for. Defaults to the backend's own cluster.
+        cluster: z.enum(["devnet", "mainnet-beta"]).optional(),
       })
       .parse(req.body);
 
@@ -230,8 +246,8 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     const id = newId();
     db.prepare(
       `INSERT INTO proposals (id, agent_id, tx_base64, tx_hash, reason, tier, status, block_reason,
-         intent, lamports, created_at, expires_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         intent, cluster, lamports, created_at, expires_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       id,
       agent.id,
@@ -242,6 +258,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
       status,
       decision.tier === "block" ? decision.reason : null,
       body.intent ? JSON.stringify(body.intent) : null,
+      body.cluster ?? config.cluster,
       summary.lamports,
       t,
       t + config.proposalTtlSeconds * 1000,
@@ -313,7 +330,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     if (tx.signatures.some((sig) => sig.some((b) => b !== 0))) {
       return reply.code(409).send({ error: "transaction already carries signatures and cannot be refreshed" });
     }
-    tx.message.recentBlockhash = await getBlockhash();
+    tx.message.recentBlockhash = await getBlockhash(p.cluster);
     const txBase64 = Buffer.from(tx.serialize()).toString("base64");
     const summary = inspectTransaction(txBase64);
     db.prepare("UPDATE proposals SET tx_base64 = ?, tx_hash = ?, updated_at = ? WHERE id = ?").run(
