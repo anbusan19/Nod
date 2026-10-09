@@ -106,19 +106,17 @@ export function ServerList({
                     }}
                   />
                 </View>
-                {!inUse && (
-                  <View style={{ flex: 1 }}>
-                    <Button
-                      title="Delete"
-                      kind="danger"
-                      disabled={busy}
-                      onPress={() => {
-                        close();
-                        onRemove(s.url);
-                      }}
-                    />
-                  </View>
-                )}
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="Delete"
+                    kind="danger"
+                    disabled={busy}
+                    onPress={() => {
+                      close();
+                      onRemove(s.url);
+                    }}
+                  />
+                </View>
               </View>
             )}
 

@@ -151,19 +151,41 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
     await reloadServers();
   };
 
-  const removeSaved = (url: string) =>
-    Alert.alert("Delete this server?", "It is only removed from your list. This phone keeps its registration there, so adding the server again brings your paired agents back.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          setServerMsg(undefined); // a message about a server that is now gone would be stale
-          await removeServer(kv, url);
-          await reloadServers();
+  const removeSaved = (url: string) => {
+    const inUse = normalizeUrl(url) === normalizeUrl(server);
+    const other = servers.find((x) => normalizeUrl(x.url) !== normalizeUrl(url));
+    if (inUse && !other) {
+      Alert.alert("This is your only server", "Nod needs a server to work. Add another one with the + button first, then you can delete this one.");
+      return;
+    }
+    Alert.alert(
+      "Delete this server?",
+      inUse
+        ? `It is only removed from your list; this phone keeps its registration there, so adding it again brings your paired agents back. You will be switched to ${other!.name} first.`
+        : "It is only removed from your list. This phone keeps its registration there, so adding the server again brings your paired agents back.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () =>
+            runServer(async () => {
+              if (inUse) {
+                const check = await inspectServer(other!.url);
+                if (!check.ok) return `Could not switch to ${other!.name}: ${check.reason} Nothing was deleted.`;
+                await upsertServer(kv, other!.url);
+                await markChecked(kv, other!.url);
+                await changeServer(other!.url);
+                setServer(await getServerUrl());
+              }
+              await removeServer(kv, url);
+              await reloadServers();
+              return inUse ? `Deleted. Now using ${other!.name}.` : undefined;
+            }),
         },
-      },
-    ]);
+      ],
+    );
+  };
 
   const choose = (p: ThemePref) => {
     setPref(p);
