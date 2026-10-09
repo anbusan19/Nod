@@ -12,14 +12,26 @@ export class LogPushSender implements PushSender {
   }
 }
 
+/**
+ * The service account can be a file path, or base64 JSON in FIREBASE_SERVICE_ACCOUNT_BASE64 for hosts
+ * where uploading a file is awkward. Returns undefined when neither is set.
+ */
+function loadServiceAccount(path: string | undefined, readFileSync: (p: string, enc: "utf8") => string): unknown | undefined {
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (b64) return JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+  return path ? JSON.parse(readFileSync(path, "utf8")) : undefined;
+}
+
 export async function createPushSender(serviceAccountPath: string | undefined): Promise<PushSender> {
-  if (!serviceAccountPath) return new LogPushSender();
+  if (!serviceAccountPath && !process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) return new LogPushSender();
   try {
     const { readFileSync } = await import("node:fs");
     // firebase-admin is only loaded when Firebase is configured. Modular API (v10+).
     const { initializeApp, cert } = await import("firebase-admin/app");
     const { getMessaging } = await import("firebase-admin/messaging");
-    const app = initializeApp({ credential: cert(JSON.parse(readFileSync(serviceAccountPath, "utf8"))) });
+    const account = loadServiceAccount(serviceAccountPath, readFileSync);
+    if (!account) return new LogPushSender();
+    const app = initializeApp({ credential: cert(account as any) });
     const messaging = getMessaging(app);
     console.log("[push] Firebase Cloud Messaging enabled");
     return {

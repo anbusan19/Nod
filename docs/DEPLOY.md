@@ -1,0 +1,99 @@
+# Deploying the Nod backend
+
+The backend is a single small Node service with a SQLite file. Anyone who runs it can have their own Nod: the app talks to whatever backend it is built to use, and agents pair with it through the SDK.
+
+> **Status:** the container files were written and checked step by step (install, build, production start, safety guards) but the image itself has **not** been built with Docker yet. The first `docker build` is part of your verification.
+
+## What you need
+
+| Need | Why |
+|---|---|
+| A host that runs a container (or Node 24) | The service itself |
+| A **persistent disk** mounted at `/data` | The SQLite database. Without it, every restart forgets all users and agents |
+| **HTTPS** in front of it | Release builds of the app refuse plain `http://` |
+| A **Firebase project** (optional, recommended) | Push notifications to the lock screen. Without it the app still works, but only while open (it polls every 4 s) |
+
+Run **one instance only.** SQLite is a single-writer file; do not scale horizontally without moving to a client/server database first.
+
+## 1. Configure
+
+```bash
+cp .env.production.example .env.production
+openssl rand -hex 32          # paste as AGENT_API_KEY_SALT
+```
+
+`AGENT_API_KEY_SALT` is the one setting you must get right. It protects every agent key and device token. **Set it once and never change it:** changing it invalidates all of them. The server refuses to start in production with the default value.
+
+Optional push notifications:
+
+```bash
+# Firebase console → Project settings → Service accounts → Generate new private key
+base64 -i firebase-service-account.json | tr -d '\n'     # paste as FIREBASE_SERVICE_ACCOUNT_BASE64
+```
+
+## 2. Run
+
+**Docker Compose (any VPS):**
+
+```bash
+docker compose up -d --build
+curl http://localhost:3000/health        # {"ok":true,"cluster":"devnet"}
+```
+
+**Any container host** (Fly.io, Railway, Render, a Kubernetes pod, and so on): build the `Dockerfile` at the repository root, mount a volume at `/data`, set the variables from `.env.production`, expose port `3000`, and let the platform terminate HTTPS. Set `TRUST_PROXY=true` (the image already does) so rate limits see real client addresses.
+
+**Without Docker:**
+
+```bash
+npm ci -w backend --ignore-scripts && npm run build -w backend
+NODE_ENV=production DATABASE_URL=/var/lib/nod/nod.db AGENT_API_KEY_SALT=… node backend/dist/index.js
+```
+
+Put Caddy or nginx in front for HTTPS. Caddy needs two lines:
+
+```
+nod.example.com {
+  reverse_proxy localhost:3000
+}
+```
+
+## 3. Point the app at it
+
+The mobile app reads its server address when it is built:
+
+```bash
+# app/.env
+EXPO_PUBLIC_API_URL=https://nod.example.com
+EXPO_PUBLIC_SOLANA_CLUSTER=devnet
+```
+
+Then build the release APK (see the main README). Self-hosters can also change the server later under **Settings → Server** in the app.
+
+## 4. Pair an agent
+
+In the app: **Agents → Show pairing code**. Then:
+
+```bash
+npx @nod/sdk pair <CODE> --name my-agent --api https://nod.example.com
+```
+
+## Operating it
+
+- **Backups:** copy `/data/nod.db` while the service is running with `sqlite3 /data/nod.db ".backup /backups/nod-$(date +%F).db"`. It holds users' agents, limits and proposal history, but **no private keys**; those never leave the wallet app.
+- **Upgrading:** rebuild and restart. New columns are added automatically on startup.
+- **Logs:** standard output. Errors from unexpected failures print as `[error]`; invalid requests are answered with 400 and are not logged.
+- **Abuse limits:** 240 requests per minute per key (`RATE_LIMIT_PER_MINUTE`), 10 pairing attempts and 20 device registrations per minute per address, 256 KB request bodies.
+- **Revoking an agent:** the user does it from the app (Agents → Remove). The key stops working immediately.
+
+## What the operator can and cannot see
+
+Cannot: private keys, or move funds. The backend never signs anything, and the phone verifies the exact transaction it signs.
+
+Can: the transactions agents propose, the reasons they give, which agents are paired to which device, and the Solana address each user connected. Run a backend you would be comfortable having that data on, and say so to your users.
+
+## Known limits
+
+- One instance, SQLite, no automatic failover.
+- Proposals older than a few days stay in the database; there is no retention job yet.
+- No operator dashboard or per-user admin tools.
+- Not independently audited. Use test funds.

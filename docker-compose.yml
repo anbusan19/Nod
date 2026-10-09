@@ -1,0 +1,13 @@
+# Quick self-host:  cp .env.production.example .env.production && docker compose up -d
+# Put an HTTPS reverse proxy (Caddy, nginx, a cloud load balancer) in front; the app needs https:// in release builds.
+services:
+  nod-backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      - "3000:3000"
+    volumes:
+      - nod-data:/data
+volumes:
+  nod-data:

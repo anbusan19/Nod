@@ -1,8 +1,9 @@
 import { buildApp } from "./app.js";
-import { config } from "./config.js";
+import { assertProductionConfig, config } from "./config.js";
 import { openDb } from "./db/index.js";
 import { createPushSender } from "./push/sender.js";
 
+assertProductionConfig();
 const db = openDb(config.dbPath);
 const push = await createPushSender(config.firebaseServiceAccount);
 const app = buildApp({ db, push });

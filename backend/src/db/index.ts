@@ -1,4 +1,7 @@
-import { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
+
+// Loaded at runtime because bundlers (esbuild) do not know node:sqlite is built in and rewrite the import.
+const { DatabaseSync: Database } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
 
 export type DB = DatabaseSync;
 
@@ -60,7 +63,7 @@ CREATE INDEX IF NOT EXISTS proposals_agent ON proposals(agent_id, created_at);
 `;
 
 export function openDb(path: string): DB {
-  const db = new DatabaseSync(path);
+  const db = new Database(path);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
   db.exec(SCHEMA);
   // Databases created before `intent` existed need the column added.

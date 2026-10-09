@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+**/dist
+.git
+app
+docs
+**/*.db
+**/*.db-*
+**/.env
+**/.env.*
+!**/.env.example
+**/firebase-service-account.json
+**/*-firebase-adminsdk-*.json
+**/google-services.json
+*.tgz

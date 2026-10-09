@@ -20,3 +20,20 @@ export const config = {
   defaultHardCapUsd: num(process.env.DEFAULT_HARD_CAP_USD, 500),
   proposalTtlSeconds: num(process.env.PROPOSAL_TTL_SECONDS, 90),
 };
+
+/**
+ * Refuse to start in production with unsafe settings. A default salt would make every agent
+ * key and device token derivable, and changing it later would invalidate all of them.
+ */
+export function assertProductionConfig() {
+  if (process.env.NODE_ENV !== "production") return;
+  const problems: string[] = [];
+  if (config.keySalt === "change-me" || config.keySalt.length < 24) {
+    problems.push("AGENT_API_KEY_SALT must be a random string of at least 24 characters. Set it once and never change it.");
+  }
+  if (config.dbPath === "./nod.db") problems.push("DATABASE_URL should point at a persistent volume, such as /data/nod.db.");
+  if (problems.length > 0) {
+    console.error("Refusing to start:\n- " + problems.join("\n- "));
+    process.exit(1);
+  }
+}
