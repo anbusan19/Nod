@@ -45,7 +45,7 @@ export function Settings() {
       const now = await getServerUrl();
       setServer(now);
       setServerInput(now);
-      return reset ? "Back to the built-in server. This phone registered again, so re-pair your agents." : `Now using ${now}. This phone registered again, so re-pair your agents.`;
+      return reset ? "Back to the built-in server." : `Now using ${now}.`;
     });
 
   const choose = (p: ThemePref) => {
@@ -68,7 +68,7 @@ export function Settings() {
   };
 
   return (
-    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
+    <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
       <T size={24} weight="bold">Settings</T>
       {msg && (
         <Card style={{ borderColor: c.accentText }}>
@@ -113,7 +113,7 @@ export function Settings() {
 
       <Card style={{ gap: 10 }}>
         <T weight="semibold">Server</T>
-        <T size={13} muted>The Nod backend this app talks to. Agents pair with it, and it forwards their proposals to this phone. Switching servers registers this phone again, so you will need to re-pair your agents.</T>
+        <T size={13} muted>The Nod backend this app talks to. Agents pair with it, and it forwards their proposals to this phone. Agents are paired with one server, so after switching you see only the agents paired there. Switching back brings the old ones back.</T>
         <TextInput
           value={serverInput}
           onChangeText={setServerInput}

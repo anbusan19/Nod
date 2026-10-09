@@ -1,5 +1,6 @@
 import { config } from "../config";
 import { kv } from "../storage";
+import { getDevice, saveDevice } from "./devices";
 
 export interface Policy {
   autoLimitLamports: number;
@@ -47,11 +48,12 @@ export async function getServerUrl(): Promise<string> {
 
 async function request<T>(method: string, path: string, body?: unknown, auth = true): Promise<T> {
   const headers: Record<string, string> = { "content-type": "application/json" };
+  const base = await getServerUrl();
   if (auth) {
-    const token = await kv.get("deviceToken");
-    if (token) headers.authorization = `Bearer ${token}`;
+    const device = await getDevice(kv, base);
+    if (device) headers.authorization = `Bearer ${device.deviceToken}`;
   }
-  const res = await fetch(`${await getServerUrl()}${path}`, {
+  const res = await fetch(`${base}${path}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -64,10 +66,9 @@ async function request<T>(method: string, path: string, body?: unknown, auth = t
 export const api = {
   /** Registers this phone with the backend the first time the app runs. */
   async ensureDevice(): Promise<void> {
-    if (await kv.get("deviceToken")) return;
-    const r = await request<{ deviceId: string; deviceToken: string }>("POST", "/v1/devices", {}, false);
-    await kv.set("deviceId", r.deviceId);
-    await kv.set("deviceToken", r.deviceToken);
+    const base = await getServerUrl();
+    if (await getDevice(kv, base)) return;
+    await saveDevice(kv, base, await request<{ deviceId: string; deviceToken: string }>("POST", "/v1/devices", {}, false));
   },
   updateDevice: (d: { wallet?: string; fcmToken?: string }) => request<{ ok: true }>("PATCH", "/v1/devices/me", d),
   createPairing: () => request<{ code: string; expiresAt: number }>("POST", "/v1/pairings"),
@@ -82,13 +83,11 @@ export const api = {
   removeAgent: (id: string) => request<{ ok: true }>("DELETE", `/v1/agents/${id}`),
   /** Issue a new key for an agent. The old key stops working; the new one is returned once. */
   rotateKey: (id: string) => request<{ apiKey: string }>("POST", `/v1/agents/${id}/rotate-key`),
-  /** Point this install at another backend. Devices are registered per backend, so register again. */
+  /** Point this install at another backend. It registers there once; switching back keeps its old identity. */
   async setServer(url: string | undefined): Promise<void> {
     if (url) await kv.set("apiUrl", url);
     else await kv.remove("apiUrl");
-    await kv.remove("deviceToken");
-    await kv.remove("deviceId");
-    await api.ensureDevice();
+    if (await getServerUrl()) await api.ensureDevice();
   },
   reject: (id: string) => request<{ ok: true }>("POST", `/v1/proposals/${id}/reject`),
   result: (id: string, r: { status: "approved" | "submitted" | "confirmed" | "failed"; txHash: string; signature?: string; error?: string }) =>
