@@ -160,7 +160,8 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
           <T size={13} muted>Trust the decoded details below, not the agent's description.</T>
         </Card>
       )}
-      {intentCheck?.status === "match" && <Badge label="Matches what the agent said" tone="ok" />}
+      {/* A reassuring badge next to a danger warning would mislead, so it only shows when nothing is high-risk. */}
+      {intentCheck?.status === "match" && !prepared?.risks.some((r) => r.severity === "danger") && <Badge label="Matches what the agent said" tone="ok" />}
       {intentCheck?.status === "none" && prepared && <T size={13} muted>The agent did not state an amount or recipient to check.</T>}
 
       {!wallet && <Card><T>Connect your wallet in Settings to review and sign.</T></Card>}

@@ -2,7 +2,7 @@ import "./src/polyfills";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { ActivityIndicator, BackHandler, Pressable, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { T } from "./src/components/ui";
 import { onProposalOpened, registerForPush } from "./src/push/notifications";
@@ -28,6 +28,16 @@ function Shell() {
     registerForPush();
     return onProposalOpened(openProposal);
   }, [ready, openProposal]);
+
+  // The Android back button closes an open approval card instead of leaving the app.
+  useEffect(() => {
+    if (!openProposalId) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      openProposal(undefined);
+      return true;
+    });
+    return () => sub.remove();
+  }, [openProposalId, openProposal]);
 
   if (!ready) {
     return <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}><ActivityIndicator /></View>;

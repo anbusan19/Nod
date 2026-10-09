@@ -41,6 +41,8 @@ export function SwapCard({ prepared }: { prepared: Prepared }) {
   const pay = exactIn ? formatToken(s.inAmount, src, s.sourceMint) : `up to ${formatToken(s.inLimit, src, s.sourceMint)}`;
   const receive = exactIn ? `at least ${formatToken(s.outLimit, dst, s.destinationMint)}` : `exactly ${formatToken(s.outAmount, dst, s.destinationMint)}`;
   const stale = age > 30;
+  // If the output is not paid to the user's own account, "You receive" would be false.
+  const elsewhere = prepared.risks.some((r) => r.code === "swap-output-elsewhere");
   const programs = prepared.simulation.programsInvoked.filter((p) => p !== "ComputeBudget111111111111111111111111111111");
 
   return (
@@ -53,8 +55,9 @@ export function SwapCard({ prepared }: { prepared: Prepared }) {
       <View style={{ gap: 2 }}>
         <T size={13} muted>You pay</T>
         <Mono size={24} medium color={c.danger}>{pay}</Mono>
-        <T size={13} muted style={{ marginTop: 8 }}>You receive</T>
-        <Mono size={24} medium color={c.ok}>{receive}</Mono>
+        <T size={13} muted style={{ marginTop: 8 }}>{elsewhere ? "Paid out to someone else" : "You receive"}</T>
+        <Mono size={24} medium color={elsewhere ? c.danger : c.ok}>{receive}</Mono>
+        {elsewhere && <T size={13} style={{ color: c.danger }}>This output does not go to your wallet.</T>}
       </View>
 
       <View style={{ gap: 6 }}>
