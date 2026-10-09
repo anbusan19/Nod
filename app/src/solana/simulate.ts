@@ -1,6 +1,7 @@
 import { AccountLayout } from "@solana/spl-token";
 import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
-import { connection } from "./connection";
+import type { Cluster } from "../config";
+import { connectionFor } from "./connection";
 
 export interface BalanceDelta {
   /** Account whose balance changes. */
@@ -17,6 +18,18 @@ export interface SimulationResult {
   unitsConsumed?: number;
   deltas: BalanceDelta[];
   logs: string[];
+  /** Every program the simulation invoked, outermost first. For a swap this reveals the real route. */
+  programsInvoked: string[];
+}
+
+/** Program ids in order of first appearance, from "Program <id> invoke [depth]" log lines. */
+export function programsFromLogs(logs: string[]): string[] {
+  const seen: string[] = [];
+  for (const line of logs) {
+    const m = /^Program (\w{32,44}) invoke \[\d+\]/.exec(line);
+    if (m && !seen.includes(m[1])) seen.push(m[1]);
+  }
+  return seen;
 }
 
 /**
@@ -27,7 +40,9 @@ export async function simulate(
   tx: VersionedTransaction,
   owner: PublicKey,
   tokenAccounts: string[],
+  cluster: Cluster,
 ): Promise<SimulationResult> {
+  const connection = connectionFor(cluster);
   const watched = [owner, ...tokenAccounts.map((a) => new PublicKey(a))];
   const before = await connection.getMultipleAccountsInfo(watched, "confirmed");
 
@@ -41,7 +56,7 @@ export async function simulate(
 
   const logs = res.value.logs ?? [];
   if (res.value.err) {
-    return { ok: false, error: JSON.stringify(res.value.err), unitsConsumed: res.value.unitsConsumed, deltas: [], logs };
+    return { ok: false, error: JSON.stringify(res.value.err), unitsConsumed: res.value.unitsConsumed, deltas: [], logs, programsInvoked: programsFromLogs(logs) };
   }
 
   const deltas: BalanceDelta[] = [];
@@ -69,5 +84,5 @@ export async function simulate(
     }
   }
 
-  return { ok: true, unitsConsumed: res.value.unitsConsumed, deltas, logs };
+  return { ok: true, unitsConsumed: res.value.unitsConsumed, deltas, logs, programsInvoked: programsFromLogs(logs) };
 }

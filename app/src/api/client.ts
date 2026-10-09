@@ -33,6 +33,7 @@ export interface Proposal {
   status: ProposalStatus;
   blockReason: string | null;
   intent: { sol?: number; recipient?: string } | null;
+  cluster: "devnet" | "mainnet-beta";
   signature: string | null;
   error: string | null;
   createdAt: number;

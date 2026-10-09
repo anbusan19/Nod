@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { api, type Proposal } from "../api/client";
 import { HoldButton } from "../components/HoldButton";
+import { SwapCard } from "../components/SwapCard";
 import { Badge, Button, Card, Mono, T } from "../components/ui";
 import { approve, prepare, type Prepared } from "../solana/approve";
 import { formatSol, formatTokenAmount, shorten, type DecodedInstruction } from "../solana/decode";
@@ -43,7 +44,9 @@ function describe(ix: DecodedInstruction, owner: string): { title: string; lines
     case "create-ata":
       return { title: "Create token account", lines: [["For wallet", ix.wallet], ["Mint", ix.mint]] };
     case "swap":
-      return { title: "Swap tokens", lines: [["Program", PROGRAM_NAMES["JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"]]] };
+      return { title: ix.unreadable ? "Swap Nod cannot read" : "Swap tokens", lines: [["Program", PROGRAM_NAMES["JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"]]] };
+    case "spl-sync-native":
+      return { title: "Refresh wrapped SOL balance", lines: [["Account", ix.account]] };
     case "compute-budget":
       return { title: ix.detail, lines: [] };
     case "memo":
@@ -117,6 +120,11 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
   const autoLimit = agents.find((a) => a.id === proposal.agentId)?.policy?.autoLimitLamports;
   const simOutflow = sol.reduce((max, d) => (d.delta < 0n && -d.delta > max ? -d.delta : max), 0n);
   const outflow = prepared && wallet ? (() => { const d = solOutflow(prepared.decoded, wallet); return d > simOutflow ? d : simOutflow; })() : 0n;
+  const rest = prepared
+    ? prepared.decoded.instructions
+        .map((ix, n) => ({ ix, n }))
+        .filter(({ ix, n }) => ix.kind !== "compute-budget" && !prepared.swap?.hidden.has(n) && !(prepared.swap?.swap && n === prepared.swap.index))
+    : [];
   const reasons = prepared ? holdReasons({ intent: intentCheck, risks: prepared.risks, outflowLamports: outflow, autoLimitLamports: autoLimit }) : [];
 
   return (
@@ -163,11 +171,12 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
             </View>
           )}
 
-          <Card style={{ gap: 14 }}>
-            <T size={13} muted>What this transaction does</T>
-            {prepared.decoded.instructions
-              .filter((ix) => ix.kind !== "compute-budget")
-              .map((ix, i) => {
+          <SwapCard prepared={prepared} />
+
+          {(rest.length > 0 || !prepared.swap?.swap) && (
+            <Card style={{ gap: 14 }}>
+              <T size={13} muted>{prepared.swap?.swap ? "Also in this transaction" : "What this transaction does"}</T>
+              {rest.map(({ ix }, i) => {
                 const d = describe(ix, wallet!);
                 return (
                   <View key={i} style={{ gap: 4 }}>
@@ -181,7 +190,8 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
                   </View>
                 );
               })}
-          </Card>
+            </Card>
+          )}
 
           <Card style={{ gap: 8 }}>
             <T size={13} muted>Your balance changes (simulated)</T>

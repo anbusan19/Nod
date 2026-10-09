@@ -10,9 +10,16 @@ function summary(p: Proposal): string {
     const ix = decodeTransaction(deserialize(p.transaction)).instructions.find((i) => i.kind !== "compute-budget");
     if (ix?.kind === "sol-transfer") return `Send ${formatSol(ix.lamports)} to ${shorten(ix.to)}`;
     if (ix?.kind === "spl-transfer") return `Token transfer to ${shorten(ix.destination)}`;
-    if (ix?.kind === "swap") return "Swap";
+    if (ix?.kind === "swap") return "Token swap (Jupiter)";
   } catch {
-    // Lookup tables or malformed bytes: fall back to the generic label.
+    // Lookup tables can't be resolved offline. A Jupiter program id is still visible in the message.
+    try {
+      if (deserialize(p.transaction).message.staticAccountKeys.some((k) => k.toBase58() === "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4")) {
+        return "Token swap (Jupiter)";
+      }
+    } catch {
+      // Malformed bytes: fall through.
+    }
   }
   return "Transaction";
 }

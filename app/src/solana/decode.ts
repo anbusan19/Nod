@@ -195,13 +195,16 @@ export interface RiskContext {
   knownRecipients: Set<string>;
   /** Largest SOL transfer (lamports) considered normal for this agent. */
   usualMaxLamports?: bigint;
+  /** Instruction indexes already explained elsewhere (such as swap plumbing); not risk-assessed. */
+  ignore?: Set<number>;
 }
 
 export function assessRisks(decoded: DecodedTransaction, ctx: RiskContext): Risk[] {
   const risks = new Map<RiskCode, Risk>();
   const add = (r: Risk) => risks.set(r.code, r);
 
-  for (const ix of decoded.instructions) {
+  for (const [n, ix] of decoded.instructions.entries()) {
+    if (ctx.ignore?.has(n)) continue;
     switch (ix.kind) {
       case "unknown":
         add({ code: "unknown-program", label: "Cannot decode, review carefully", severity: "danger" });

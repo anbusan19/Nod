@@ -2,7 +2,8 @@ import { transact, type Web3MobileWallet } from "@solana-mobile/mobile-wallet-ad
 import type { VersionedTransaction } from "@solana/web3.js";
 import { config } from "../config";
 import { normalizeAddress } from "./address";
-import { connection } from "./connection";
+import type { Cluster } from "../config";
+import { connectionFor } from "./connection";
 import { kv } from "../storage";
 
 const IDENTITY = {
@@ -61,7 +62,8 @@ export async function signWithWallet(tx: VersionedTransaction, expectedSigner: s
 }
 
 /** Submits and waits for confirmation, giving up once the blockhash can no longer land. */
-export async function sendAndConfirm(signed: VersionedTransaction, blockhash: string) {
+export async function sendAndConfirm(signed: VersionedTransaction, blockhash: string, cluster: Cluster) {
+  const connection = connectionFor(cluster);
   const signature = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
   for (;;) {
     const { value } = await connection.getSignatureStatuses([signature]);
