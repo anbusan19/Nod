@@ -570,7 +570,7 @@ Update this table honestly before submitting.
 | Activity feed | [x] |
 | Demo payment agent | [x] working against devnet |
 | Tamper demos (blocked programs, delegate, assign, swapped transaction) | [x] confirmed on device |
-| Blockhash refresh before signing | [x] unit-tested, awaiting device re-test |
+| Blockhash refresh before signing | [x] confirmed on device (40s approval on a ~36s blockhash) |
 | Jupiter swap decoding | [ ] |
 | Squads multisig (tier 3) | [ ] stretch |
 | Squads on-chain spending limits | [ ] stretch |
