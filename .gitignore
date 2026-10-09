@@ -17,3 +17,4 @@ app/ios/
 *.log
 *.db-shm
 *.db-wal
+*-firebase-adminsdk-*.json

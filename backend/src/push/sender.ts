@@ -16,15 +16,17 @@ export async function createPushSender(serviceAccountPath: string | undefined): 
   if (!serviceAccountPath) return new LogPushSender();
   try {
     const { readFileSync } = await import("node:fs");
-    // firebase-admin is an optional dependency, loaded only when configured.
-    const mod = await (new Function("m", "return import(m)") as (m: string) => Promise<any>)("firebase-admin");
-    const admin = mod.default ?? mod;
-    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(readFileSync(serviceAccountPath, "utf8"))) });
+    // firebase-admin is only loaded when Firebase is configured. Modular API (v10+).
+    const { initializeApp, cert } = await import("firebase-admin/app");
+    const { getMessaging } = await import("firebase-admin/messaging");
+    const app = initializeApp({ credential: cert(JSON.parse(readFileSync(serviceAccountPath, "utf8"))) });
+    const messaging = getMessaging(app);
+    console.log("[push] Firebase Cloud Messaging enabled");
     return {
       async send(fcmToken, proposalId) {
         // The visible text is generic on purpose: no amounts, recipients or reasons leave the backend.
         // `data` carries only the proposal id so the app can open the right card when tapped.
-        await admin.messaging().send({
+        await messaging.send({
           token: fcmToken,
           data: { proposalId },
           android: {
