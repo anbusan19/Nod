@@ -43,7 +43,7 @@ export function Settings() {
     <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
       <T size={24} weight="bold">Settings</T>
       {msg && (
-        <Card style={{ borderColor: c.primary }}>
+        <Card style={{ borderColor: c.accentText }}>
           <T size={14}>{msg}</T>
         </Card>
       )}

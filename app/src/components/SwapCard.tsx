@@ -16,6 +16,7 @@ function useAge(since: number) {
   return age;
 }
 
+const duration = (s: number) => (s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`);
 const pct = (bps: number) => `${(bps / 100).toFixed(2)}%`;
 
 function Row({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
@@ -61,7 +62,7 @@ export function SwapCard({ prepared }: { prepared: Prepared }) {
         <Row label="Slippage tolerance" value={pct(s.slippageBps)} />
         <Row label="Platform fee" value={pct(s.platformFeeBps)} />
         <Row label="Route" value={`${s.routeSteps} step${s.routeSteps === 1 ? "" : "s"}`} />
-        <Row label="Quote age" value={`${age}s${stale ? " · prices may have moved" : ""}`} />
+        <Row label="Quote age" value={`${duration(age)}${stale ? " · prices may have moved" : ""}`} />
       </View>
 
       <T size={12} muted>

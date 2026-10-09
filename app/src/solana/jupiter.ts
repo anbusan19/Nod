@@ -6,7 +6,9 @@ import { sha256 } from "@noble/hashes/sha2.js";
  * reported as unreadable instead of guessed at.
  */
 
-const disc = (name: string) => Buffer.from(sha256(new TextEncoder().encode(`global:${name}`))).subarray(0, 8).toString("hex");
+// Note: never call Buffer methods on the result of `subarray`. Hermes (React Native's JS engine)
+// returns a plain Uint8Array from it, which has no readUInt32LE, toString("hex") and so on.
+const disc = (name: string) => Buffer.from(sha256(new TextEncoder().encode(`global:${name}`))).toString("hex", 0, 8);
 
 type Variant = "route" | "shared_accounts_route" | "exact_out_route";
 
@@ -65,7 +67,7 @@ const BPS = 10_000n;
 
 export function parseJupiterInstruction(data: Buffer, accounts: string[]): JupiterParse {
   if (data.length < 8) return { ok: false, reason: "Instruction too short" };
-  const key = data.subarray(0, 8).toString("hex");
+  const key = data.toString("hex", 0, 8);
   const variant = BY_DISCRIMINATOR.get(key);
   if (!variant) {
     return { ok: false, reason: KNOWN_UNVERIFIED.has(key) ? "This Jupiter instruction type is not supported yet" : "Unrecognized Jupiter instruction" };
@@ -74,11 +76,11 @@ export function parseJupiterInstruction(data: Buffer, accounts: string[]): Jupit
   // The fixed-size fields sit at the very end; the route plan in the middle varies in length.
   const TAIL = 8 + 8 + 2 + 1;
   if (data.length < layout.planOffset + 4 + TAIL) return { ok: false, reason: "Swap data is malformed" };
-  const tail = data.subarray(data.length - TAIL);
-  const first = tail.readBigUInt64LE(0);
-  const second = tail.readBigUInt64LE(8);
-  const slippageBps = tail.readUInt16LE(16);
-  const platformFeeBps = tail[18];
+  const t = data.length - TAIL;
+  const first = data.readBigUInt64LE(t);
+  const second = data.readBigUInt64LE(t + 8);
+  const slippageBps = data.readUInt16LE(t + 16);
+  const platformFeeBps = data[t + 18];
   if (slippageBps > 10_000) return { ok: false, reason: "Swap data is malformed" };
 
   const at = (i: number | undefined) => (i === undefined ? undefined : accounts[i]);

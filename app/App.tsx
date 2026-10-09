@@ -48,7 +48,7 @@ function Shell() {
       <View style={{ flexDirection: "row", borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.card }}>
         {TABS.map((t) => (
           <Pressable key={t} onPress={() => setTab(t)} style={{ flex: 1, paddingVertical: 14, alignItems: "center" }}>
-            <T size={13} weight={tab === t ? "bold" : "regular"} style={{ color: tab === t ? c.primary : c.muted }}>
+            <T size={13} weight={tab === t ? "bold" : "regular"} style={{ color: tab === t ? c.accentText : c.muted }}>
               {t}{t === "Approvals" && pending > 0 ? ` (${pending})` : ""}
             </T>
           </Pressable>

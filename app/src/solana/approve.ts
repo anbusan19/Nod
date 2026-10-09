@@ -18,6 +18,8 @@ import { resolveTokens, type TokenInfo } from "./tokens";
 import { assertHashMatches } from "./verify";
 import { verifySigned } from "./verifySigned";
 
+const label = (c: Cluster) => (c === "mainnet-beta" ? "mainnet" : c);
+
 export interface Prepared {
   proposal: Proposal;
   cluster: Cluster;
@@ -31,6 +33,8 @@ export interface Prepared {
   risks: Risk[];
   /** Reasons the app refuses to let the user sign at all. */
   blockers: string[];
+  /** Context worth showing that is not a reason to refuse. */
+  notes: string[];
 }
 
 /**
@@ -45,8 +49,10 @@ export async function prepare(proposal: Proposal, owner: string, knownRecipients
   const decoded = decodeTransaction(tx, tables);
 
   const blockers: string[] = [];
+  const notes: string[] = [];
+  const previewOnly = cluster !== config.cluster;
   if (cluster !== config.cluster) {
-    blockers.push(`This is a ${cluster} transaction, but Nod is set to ${config.cluster}. You can review it, but not sign it.`);
+    blockers.push(`This is a ${label(cluster)} transaction, but Nod is set to ${label(config.cluster)}. You can review it, but not sign it.`);
   }
   if (!decoded.signers.includes(owner)) blockers.push("This transaction is not signed by your connected wallet.");
   if (decoded.signers.length > 1) blockers.push("This transaction needs signatures from other accounts.");
@@ -59,14 +65,22 @@ export async function prepare(proposal: Proposal, owner: string, knownRecipients
     simulate(tx, new PublicKey(owner), [...decoded.tokenAccounts, ...swapAccounts], cluster),
     resolveTokens(connectionFor(cluster), mints),
   ]);
-  if (!simulation.ok) blockers.push(`Simulation failed: ${simulation.error}`);
+  if (!simulation.ok) {
+    if (previewOnly) {
+      // Signing is already blocked for the cluster mismatch. A failed simulation here usually just means
+      // this wallet has no funds or account on that cluster, so explain it instead of adding a second blocker.
+      notes.push(`Balance changes can't be simulated on ${label(cluster)}: this wallet has no usable account or funds there. The decoded details above still come from the transaction itself.`);
+    } else {
+      blockers.push(`Simulation failed: ${simulation.error}`);
+    }
+  }
 
   const risks = assessRisks(decoded, { owner, knownRecipients, ignore: swap?.hidden });
   for (const r of swap?.risks ?? []) if (!risks.some((x) => x.code === r.code)) risks.push(r);
 
   if (risks.some((r) => r.code === "unknown-program")) blockers.push("Contains a program Nod cannot decode.");
   if (swap?.unreadable) blockers.push("Contains a swap Nod cannot read, so it cannot show you what it does.");
-  return { proposal, cluster, tx, tables, decoded, simulation, swap, tokens, risks, blockers };
+  return { proposal, cluster, tx, tables, decoded, simulation, swap, tokens, risks, blockers, notes };
 }
 
 export type ApproveOutcome = { ok: true; signature: string } | { ok: false; reason: string };

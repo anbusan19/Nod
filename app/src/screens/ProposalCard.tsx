@@ -76,7 +76,11 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
     if (!wallet) return;
     prepare(proposal, wallet, knownRecipients)
       .then(setPrepared)
-      .catch((e) => setLoadError((e as Error).message));
+      .catch((e) => {
+        // Keep the stack: the card only shows the message.
+        console.warn("prepare failed:", (e as Error).stack ?? e);
+        setLoadError((e as Error).message);
+      });
     // Decode once per proposal; later status changes must not re-simulate.
   }, [proposal.id, wallet]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -195,7 +199,8 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
 
           <Card style={{ gap: 8 }}>
             <T size={13} muted>Your balance changes (simulated)</T>
-            {sol.length === 0 && tokens.length === 0 && <T>No balance changes found.</T>}
+            {!prepared.simulation.ok && <T size={14} muted>Not available: the simulation did not run.</T>}
+            {prepared.simulation.ok && sol.length === 0 && tokens.length === 0 && <T>No balance changes found.</T>}
             {sol.map((d) => (
               <Mono key={d.account} size={20} medium color={d.delta < 0n ? c.danger : c.ok}>
                 {d.delta > 0n ? "+" : ""}{formatSol(d.delta)}
@@ -217,6 +222,10 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
               </View>
             ))}
           </Card>
+
+          {prepared.notes.map((n) => (
+            <T key={n} size={13} muted>{n}</T>
+          ))}
 
           {prepared.blockers.map((b) => (
             <Card key={b} style={{ backgroundColor: c.dangerBg, borderColor: c.danger }}><T style={{ color: c.danger }}>{b}</T></Card>

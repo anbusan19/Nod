@@ -6,8 +6,11 @@ const light = {
   text: "#0B0D12",
   muted: "#5B6472",
   border: "#E3E6EB",
-  primary: "#2F5BFF",
-  onPrimary: "#FFFFFF",
+  // Buttons use the logo blue in both themes, with the logo's dark background colour as text.
+  primary: "#99ACFF",
+  onPrimary: "#070606",
+  // Blue used for text and thin lines; #99ACFF is too light to read on a light background.
+  accentText: "#3A55C8",
   ok: "#12805C",
   warn: "#B45309",
   danger: "#C62828",
@@ -25,6 +28,7 @@ const dark: typeof light = {
   border: "#292727",
   primary: "#99ACFF",
   onPrimary: "#070606",
+  accentText: "#99ACFF",
   ok: "#4CD7A0",
   warn: "#F5B25B",
   danger: "#FF7A7A",
