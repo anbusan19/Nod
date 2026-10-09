@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Linking, ScrollView, Switch, TextInput, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { Alert, Linking, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
 import { getServerUrl } from "../api/client";
 import { inspectServer, parseServerUrl } from "../api/server";
-import { loadServers, normalizeUrl, removeServer, renameServer, sortServers, upsertServer, type SavedServer } from "../api/servers";
+import { addServer, loadServers, markChecked, normalizeUrl, removeServer, renameServer, sortServers, upsertServer, type SavedServer } from "../api/servers";
 import { fonts } from "../theme/fonts";
 import { ServerList } from "../components/ServerList";
 import { ThemeSwitch } from "../components/ThemeSwitch";
@@ -22,6 +23,10 @@ export function Settings() {
   const [server, setServer] = useState("");
   const [serverInput, setServerInput] = useState("");
   const [newName, setNewName] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [serverMsg, setServerMsg] = useState<string>();
+  const [serverBusy, setServerBusy] = useState(false);
+  const [testing, setTesting] = useState<string>();
   const [servers, setServers] = useState<SavedServer[]>([]);
   const [msg, setMsg] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -88,33 +93,77 @@ export function Settings() {
 
   const reloadServers = async () => setServers(sortServers(await loadServers(kv), await getServerUrl()));
 
-  /** Switch backends, but only to one that answers like a Nod backend. Remembers it, with the name if one was given. */
-  const switchTo = (rawUrl: string, name?: string) =>
-    run(async () => {
-      const parsed = parseServerUrl(rawUrl, { allowInsecure: __DEV__ });
-      if (!parsed.ok) return parsed.reason;
-      const check = await inspectServer(parsed.url);
+  /** Server actions report inside the Servers card, so the page does not jump to the top. */
+  const runServer = async (fn: () => Promise<string | void>) => {
+    setServerBusy(true);
+    setServerMsg(undefined);
+    try {
+      setServerMsg((await fn()) ?? undefined);
+    } catch (e) {
+      setServerMsg((e as Error).message);
+    }
+    setServerBusy(false);
+  };
+
+  const nameOf = async (url: string) => (await loadServers(kv)).find((x) => normalizeUrl(x.url) === normalizeUrl(url))?.name ?? url;
+
+  /** Switch backends, but only to one that answers like a Nod backend. A server that answers counts as verified. */
+  const switchTo = (url: string) =>
+    runServer(async () => {
+      const check = await inspectServer(url);
       if (!check.ok) return `${check.reason} Nothing was changed.`;
-      await upsertServer(kv, parsed.url, { name });
-      await changeServer(parsed.url);
-      const now = await getServerUrl();
-      setServer(now);
-      setServerInput("");
-      setNewName("");
+      await upsertServer(kv, url);
+      await markChecked(kv, url);
+      await changeServer(url);
+      setServer(await getServerUrl());
       await reloadServers();
-      const label = (await loadServers(kv)).find((x) => normalizeUrl(x.url) === normalizeUrl(now))?.name ?? now;
-      return `Now using ${label}.`;
+      return `Now using ${await nameOf(url)}.`;
     });
 
+  /** Add to the list only. It does not switch, and it does not test: that is the Test connection button. */
+  const addNew = () =>
+    runServer(async () => {
+      const parsed = parseServerUrl(serverInput, { allowInsecure: __DEV__ });
+      if (!parsed.ok) return parsed.reason;
+      const r = await addServer(kv, parsed.url, newName || undefined);
+      await reloadServers();
+      if (!r.added) return "That server is already in your list.";
+      setServerInput("");
+      setNewName("");
+      setAdding(false);
+      return `Added ${await nameOf(parsed.url)}. Use Test connection to check it, or tap it to switch.`;
+    });
+
+  const testServer = (url: string) => {
+    setTesting(url);
+    return runServer(async () => {
+      const check = await inspectServer(url);
+      if (!check.ok) return `${await nameOf(url)}: ${check.reason}`;
+      await markChecked(kv, url);
+      await reloadServers();
+      return `${await nameOf(url)} is reachable (Nod API v${check.apiVersion}${check.cluster ? `, ${check.cluster}` : ""}).`;
+    }).finally(() => setTesting(undefined));
+  };
+
   const renameSaved = async (url: string, name: string) => {
+    setServerMsg(undefined);
     await renameServer(kv, url, name);
     await reloadServers();
   };
-  const removeSaved = async (url: string) => {
-    await removeServer(kv, url);
-    await reloadServers();
-    setMsg("Removed from the list. This phone still remembers its registration there, so adding it back restores your agents.");
-  };
+
+  const removeSaved = (url: string) =>
+    Alert.alert("Delete this server?", "It is only removed from your list. This phone keeps its registration there, so adding the server again brings your paired agents back.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setServerMsg(undefined); // a message about a server that is now gone would be stale
+          await removeServer(kv, url);
+          await reloadServers();
+        },
+      },
+    ]);
 
   const choose = (p: ThemePref) => {
     setPref(p);
@@ -224,33 +273,61 @@ export function Settings() {
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <View style={{ gap: 2 }}>
-          <T weight="semibold">Servers</T>
-          <T size={13} muted>The Nod backends this phone knows. Tap one to switch. Agents are paired with one server, so after switching you see only the agents paired there; switching back brings the old ones back.</T>
+        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <T weight="semibold">Servers</T>
+            <T size={13} muted>The Nod backends this phone knows. Tap one to switch. Agents are paired with one server, so after switching you see only the agents paired there; switching back brings the old ones back.</T>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={adding ? "Close the add server form" : "Add a server"}
+            hitSlop={8}
+            onPress={() => setAdding((v) => !v)}
+            style={{ width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: adding ? c.border : c.primary }}
+          >
+            <Feather name={adding ? "x" : "plus"} size={20} color={adding ? c.text : c.onPrimary} />
+          </Pressable>
         </View>
-        <ServerList servers={servers} current={server} busy={busy} onUse={(url) => switchTo(url)} onRename={renameSaved} onRemove={removeSaved} />
-        <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 12 }}>
-          <T size={13} weight="semibold">Add a server</T>
-          <TextInput
-            value={serverInput}
-            onChangeText={setServerInput}
-            placeholder="https://nod.example.com"
-            placeholderTextColor={c.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            style={{ fontFamily: fonts.mono.regular, fontSize: 13, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
-          />
-          <TextInput
-            value={newName}
-            onChangeText={setNewName}
-            maxLength={40}
-            placeholder="Name (optional), such as Home Mac"
-            placeholderTextColor={c.muted}
-            style={{ fontFamily: fonts.jakarta.regular, fontSize: 15, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
-          />
-          <Button title="Add and switch" kind="secondary" loading={busy} disabled={serverInput.trim().length === 0} onPress={() => switchTo(serverInput, newName || undefined)} />
-        </View>
+
+        {serverMsg ? (
+          <View style={{ borderWidth: 1, borderColor: c.accentText, borderRadius: 12, padding: 10 }}>
+            <T size={13}>{serverMsg}</T>
+          </View>
+        ) : null}
+
+        {adding && (
+          <View style={{ gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 14, padding: 12 }}>
+            <T size={13} weight="semibold">Add a server</T>
+            <TextInput
+              value={serverInput}
+              onChangeText={setServerInput}
+              placeholder="https://nod.example.com"
+              placeholderTextColor={c.muted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              style={{ fontFamily: fonts.mono.regular, fontSize: 13, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
+            />
+            <TextInput
+              value={newName}
+              onChangeText={setNewName}
+              maxLength={40}
+              placeholder="Name (optional), such as Home Mac"
+              placeholderTextColor={c.muted}
+              style={{ fontFamily: fonts.jakarta.regular, fontSize: 15, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
+            />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Button title="Add" loading={serverBusy} disabled={serverInput.trim().length === 0} onPress={addNew} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button title="Cancel" kind="secondary" disabled={serverBusy} onPress={() => setAdding(false)} />
+              </View>
+            </View>
+          </View>
+        )}
+
+        <ServerList servers={servers} current={server} busy={serverBusy} testing={testing} onUse={switchTo} onRename={renameSaved} onRemove={removeSaved} onTest={testServer} />
       </Card>
 
       <Card style={{ gap: 6 }}>

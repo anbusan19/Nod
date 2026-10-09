@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_NAME, MAX_SERVERS, cleanName, defaultName, loadServers, normalizeUrl, removeServer, renameServer, sortServers, upsertServer, type ServerStore } from "../servers";
+import { MAX_NAME, MAX_SERVERS, addServer, cleanName, markChecked, defaultName, loadServers, normalizeUrl, removeServer, renameServer, sortServers, upsertServer, type ServerStore } from "../servers";
 
 function memory(initial?: string): ServerStore & { raw: () => string | null } {
   let v: string | null = initial ?? null;
@@ -64,6 +64,30 @@ describe("saved servers", () => {
     expect(list).toHaveLength(MAX_SERVERS);
     expect(list.map((x) => x.url)).toContain(`https://s${MAX_SERVERS + 3}.example`);
     expect(list.map((x) => x.url)).not.toContain("https://s1.example");
+  });
+
+  it("add puts a server on the list without touching what is already there", async () => {
+    const s = memory();
+    const first = await addServer(s, "https://nod.example.com", "Team", 5);
+    expect(first.added).toBe(true);
+    expect(first.list).toEqual([{ url: "https://nod.example.com", name: "Team", lastUsed: 5 }]); // not verified yet
+
+    await renameServer(s, "https://nod.example.com", "Renamed");
+    const again = await addServer(s, "HTTPS://nod.example.com/", "Another name", 99);
+    expect(again.added).toBe(false); // same server: nothing changes
+    expect(again.list[0]).toMatchObject({ name: "Renamed", lastUsed: 5 });
+  });
+
+  it("remembers a passed connection test, and keeps it through renames and switches", async () => {
+    const s = memory();
+    await addServer(s, "https://nod.example.com", undefined, 1);
+    expect((await loadServers(s))[0].checkedAt).toBeUndefined();
+
+    const list = await markChecked(s, "https://nod.example.com/", 50);
+    expect(list[0].checkedAt).toBe(50);
+    await renameServer(s, "https://nod.example.com", "Home");
+    const switched = await upsertServer(s, "https://nod.example.com", { now: 70 });
+    expect(switched[0]).toMatchObject({ name: "Home", lastUsed: 70, checkedAt: 50 });
   });
 
   it("survives a corrupted store and bad entries", async () => {

@@ -8,6 +8,8 @@ export interface SavedServer {
   name: string;
   /** Unix milliseconds of the last time this server was switched to. */
   lastUsed: number;
+  /** When a connection test last passed (or it was switched to successfully). Missing means never verified. */
+  checkedAt?: number;
 }
 
 export interface ServerStore {
@@ -47,7 +49,7 @@ export async function loadServers(store: ServerStore): Promise<SavedServer[]> {
   try {
     const raw = JSON.parse((await store.get("servers")) ?? "[]");
     if (!Array.isArray(raw)) return [];
-    return raw.filter((s) => s && typeof s.url === "string" && typeof s.name === "string").map((s) => ({ url: s.url, name: s.name, lastUsed: Number(s.lastUsed) || 0 }));
+    return raw.filter((s) => s && typeof s.url === "string" && typeof s.name === "string").map((s) => ({ url: s.url, name: s.name, lastUsed: Number(s.lastUsed) || 0, ...(Number(s.checkedAt) ? { checkedAt: Number(s.checkedAt) } : {}) }));
   } catch {
     return [];
   }
@@ -87,6 +89,23 @@ export async function upsertServer(store: ServerStore, url: string, opts: { name
     list.splice(oldest.n, 1);
   }
   return save(store, list);
+}
+
+/**
+ * Add a server to the list without switching to it. A server that is already listed is left as it is (its name,
+ * order and verified mark are kept), and the result says so.
+ */
+export async function addServer(store: ServerStore, url: string, name?: string, now: number = Date.now()): Promise<{ added: boolean; list: SavedServer[] }> {
+  const key = normalizeUrl(url);
+  const existing = await loadServers(store);
+  if (existing.some((s) => normalizeUrl(s.url) === key)) return { added: false, list: existing };
+  return { added: true, list: await upsertServer(store, url, { name, now }) };
+}
+
+/** Record that a connection test passed. */
+export async function markChecked(store: ServerStore, url: string, now: number = Date.now()): Promise<SavedServer[]> {
+  const key = normalizeUrl(url);
+  return save(store, (await loadServers(store)).map((s) => (normalizeUrl(s.url) === key ? { ...s, checkedAt: now } : s)));
 }
 
 export async function renameServer(store: ServerStore, url: string, name: string): Promise<SavedServer[]> {
