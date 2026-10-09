@@ -21,6 +21,14 @@ One backend can serve several people (each phone sees only its own agents), so a
 
 Run **one instance only.** SQLite is a single-writer file; do not scale horizontally without moving to a client/server database first.
 
+## The quickest way
+
+```bash
+npx nod-server
+```
+
+This creates its own data folder (`~/.nod`) and secret, and prints the address to enter in the app. It is enough for trying Nod and for a single person or team on a machine they control. For a server that stays up, use the sections below.
+
 ## 1. Configure
 
 ```bash
