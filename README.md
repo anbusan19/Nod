@@ -558,14 +558,14 @@ Update this table honestly before submitting.
 
 | Feature | Status |
 |---|---|
-| MWA authorize + sign on a real device | [ ] code written, needs device test |
+| MWA authorize + sign on a real device | [x] confirmed on devnet (Phantom, OPPO CPH2213) |
 | FCM push to the device | [ ] code written, needs google-services.json |
 | Local decoder: SOL and SPL transfers | [x] unit-tested |
-| Simulation + balance deltas | [x] written, untested on device |
-| Biometric gate | [x] written, untested on device |
-| Tier 1 / Tier 2 policy engine | [x] unit-tested (tier 1 does not execute yet) |
+| Simulation + balance deltas | [x] working on device |
+| Biometric gate | [x] working on device (screen-lock fallback) |
+| Tier 1 / Tier 2 policy engine | [x] tier 2 working end to end; tier 1 does not execute yet |
 | Activity feed | [x] |
-| Demo payment agent | [x] written, untested against devnet |
+| Demo payment agent | [x] working against devnet |
 | Jupiter swap decoding | [ ] |
 | Squads multisig (tier 3) | [ ] stretch |
 | Squads on-chain spending limits | [ ] stretch |
@@ -578,6 +578,7 @@ Update this table honestly before submitting.
 - The decoder covers a fixed set of programs. Everything else is flagged, not interpreted.
 - Tier 1 enforcement is only trust-minimized when backed by Squads spending limits; otherwise it relies on the backend.
 - Push delivery depends on Firebase and phone battery settings.
+- Wallets may rewrite a transaction before signing (Phantom adds compute-budget instructions). Nod verifies the signed transaction against the reviewed one and only tolerates added compute-budget and Lighthouse instructions, with a priority-fee cap.
 - Android only.
 
 ## Roadmap

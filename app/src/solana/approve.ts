@@ -1,4 +1,4 @@
-import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, type AddressLookupTableAccount, type VersionedTransaction } from "@solana/web3.js";
 import { api, type Proposal } from "../api/client";
 import { confirmWithBiometrics } from "../security/biometric";
 import { connection, fetchLookupTables } from "./connection";
@@ -13,10 +13,12 @@ import {
 import { sendAndConfirm, signWithWallet } from "./mwa";
 import { simulate, type SimulationResult } from "./simulate";
 import { assertHashMatches } from "./verify";
+import { verifySigned } from "./verifySigned";
 
 export interface Prepared {
   proposal: Proposal;
   tx: VersionedTransaction;
+  tables: AddressLookupTableAccount[];
   decoded: DecodedTransaction;
   simulation: SimulationResult;
   risks: Risk[];
@@ -48,7 +50,7 @@ export async function prepare(proposal: Proposal, owner: string, knownRecipients
   if (risks.some((r) => r.code === "unknown-program")) {
     blockers.push("Contains a program Nod cannot decode.");
   }
-  return { proposal, tx, decoded, simulation, risks, blockers };
+  return { proposal, tx, tables, decoded, simulation, risks, blockers };
 }
 
 export type ApproveOutcome = { ok: true; signature: string } | { ok: false; reason: string };
@@ -62,6 +64,9 @@ export async function approve(p: Prepared, owner: string): Promise<ApproveOutcom
   const txHash = p.proposal.txHash;
   try {
     const signed = await signWithWallet(p.tx, owner);
+    // The wallet may add fee instructions, but must not change what the user reviewed.
+    const check = verifySigned(p.tx, signed, p.tables);
+    if (!check.ok) throw new Error(check.reason);
     await api.result(p.proposal.id, { status: "approved", txHash }).catch(() => {});
     const signature = await sendAndConfirm(signed, p.decoded.recentBlockhash);
     // The transaction has landed; a failure to tell the backend must not read as a failed payment.
