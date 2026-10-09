@@ -31,7 +31,7 @@
   "description": "The Nod backend: routes AI-agent transaction proposals to a person's phone for approval. Run your own with npx nod-server.",
   "license": "MIT",
   "bin": {
-    "nod-server": "./dist/cli.js"
+    "nod-server": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -39,5 +39,24 @@
   ],
   "engines": {
     "node": ">=22.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anbusan19/Nod.git",
+    "directory": "backend"
+  },
+  "homepage": "https://github.com/anbusan19/Nod#readme",
+  "bugs": {
+    "url": "https://github.com/anbusan19/Nod/issues"
+  },
+  "author": "Anbu Srinivasan",
+  "keywords": [
+    "nod",
+    "solana",
+    "ai-agent",
+    "agents",
+    "backend",
+    "self-hosted",
+    "transaction-approval"
+  ]
 }
