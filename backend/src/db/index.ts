@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS agents (
   name TEXT NOT NULL,
   key_hash TEXT NOT NULL UNIQUE,
   frozen INTEGER NOT NULL DEFAULT 0,
+  revoked INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS policies (
@@ -47,6 +48,7 @@ CREATE TABLE IF NOT EXISTS proposals (
   block_reason TEXT,
   intent TEXT,
   cluster TEXT NOT NULL DEFAULT 'devnet',
+  idempotency_key TEXT,
   lamports INTEGER NOT NULL DEFAULT 0,
   signature TEXT,
   error TEXT,
@@ -65,5 +67,9 @@ export function openDb(path: string): DB {
   const cols = db.prepare("PRAGMA table_info(proposals)").all() as Array<{ name: string }>;
   if (!cols.some((c) => c.name === "intent")) db.exec("ALTER TABLE proposals ADD COLUMN intent TEXT");
   if (!cols.some((c) => c.name === "cluster")) db.exec("ALTER TABLE proposals ADD COLUMN cluster TEXT NOT NULL DEFAULT 'devnet'");
+  const agentCols = db.prepare("PRAGMA table_info(agents)").all() as Array<{ name: string }>;
+  if (!agentCols.some((c) => c.name === "revoked")) db.exec("ALTER TABLE agents ADD COLUMN revoked INTEGER NOT NULL DEFAULT 0");
+  if (!cols.some((c) => c.name === "idempotency_key")) db.exec("ALTER TABLE proposals ADD COLUMN idempotency_key TEXT");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS proposals_idem ON proposals(agent_id, idempotency_key) WHERE idempotency_key IS NOT NULL");
   return db;
 }

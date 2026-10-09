@@ -82,6 +82,68 @@ describe("api", () => {
     expect((await json("POST", `/v1/proposals/${p.id}/refresh`, dev.deviceToken)).status).toBe(409);
   });
 
+  it("lets an agent read its own status and proposals", async () => {
+    const { agent } = await setup();
+    const me = await json("GET", "/v1/agent/me", agent.apiKey);
+    expect(me.status).toBe(200);
+    expect(me.body).toMatchObject({ agentId: agent.agentId, name: "payer-bot", frozen: false });
+    expect(me.body.policy.autoLimitLamports).toBeGreaterThan(0);
+    await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) });
+    await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 2000) });
+    const list = await json("GET", "/v1/agent/proposals?limit=1", agent.apiKey);
+    expect(list.body).toHaveLength(1);
+    expect((await json("GET", "/v1/agent/me")).status).toBe(401);
+  });
+
+  it("is retry-safe: the same idempotency key returns the original proposal", async () => {
+    const { agent } = await setup();
+    const tx = transferTx(payer, dest, 1000);
+    const a = await json("POST", "/v1/proposals", agent.apiKey, { transaction: tx, idempotencyKey: "pay-2026-10-09" });
+    const b = await json("POST", "/v1/proposals", agent.apiKey, { transaction: tx, idempotencyKey: "pay-2026-10-09" });
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(200);
+    expect(b.body.id).toBe(a.body.id);
+    expect(push.sent).toHaveLength(1); // no second push either
+    // also accepted as a header
+    const c = await app.inject({ method: "POST", url: "/v1/proposals", payload: { transaction: tx }, headers: { authorization: `Bearer ${agent.apiKey}`, "idempotency-key": "pay-2026-10-09" } });
+    expect(c.json().id).toBe(a.body.id);
+    // a different key is a different proposal
+    const d = await json("POST", "/v1/proposals", agent.apiKey, { transaction: tx, idempotencyKey: "other" });
+    expect(d.body.id).not.toBe(a.body.id);
+  });
+
+  it("revoking an agent kills its key and closes what it had pending", async () => {
+    const { dev, agent } = await setup();
+    const p = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;
+    expect((await json("DELETE", `/v1/agents/${agent.agentId}`, dev.deviceToken)).status).toBe(200);
+    expect((await json("GET", "/v1/agent/me", agent.apiKey)).status).toBe(401);
+    expect((await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1) })).status).toBe(401);
+    expect((await json("GET", "/v1/agents", dev.deviceToken)).body).toHaveLength(0);
+    expect((await json("GET", `/v1/proposals/${p.id}`, dev.deviceToken)).body.status).toBe("rejected");
+  });
+
+  it("rotating a key invalidates the old one", async () => {
+    const { dev, agent } = await setup();
+    const r = await json("POST", `/v1/agents/${agent.agentId}/rotate-key`, dev.deviceToken);
+    expect(r.status).toBe(200);
+    expect((await json("GET", "/v1/agent/me", agent.apiKey)).status).toBe(401);
+    expect((await json("GET", "/v1/agent/me", r.body.apiKey)).status).toBe(200);
+  });
+
+  it("will not let another phone revoke or rotate someone else's agent", async () => {
+    const { agent } = await setup();
+    const other = (await json("POST", "/v1/devices", undefined, {})).body;
+    expect((await json("DELETE", `/v1/agents/${agent.agentId}`, other.deviceToken)).status).toBe(404);
+    expect((await json("POST", `/v1/agents/${agent.agentId}/rotate-key`, other.deviceToken)).status).toBe(404);
+    expect((await json("GET", "/v1/agent/me", agent.apiKey)).status).toBe(200);
+  });
+
+  it("rate-limits pairing attempts", async () => {
+    let last = 0;
+    for (let i = 0; i < 12; i++) last = (await json("POST", "/v1/pairings/redeem", undefined, { code: "NOPE", name: "x" })).status;
+    expect(last).toBe(429);
+  });
+
   it("accepts body-less POSTs sent with a JSON content type", async () => {
     const dev = (await json("POST", "/v1/devices", undefined, {})).body;
     const res = await app.inject({

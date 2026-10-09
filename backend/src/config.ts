@@ -1,6 +1,9 @@
 const num = (v: string | undefined, d: number) => (v !== undefined && v !== "" ? Number(v) : d);
 
 export const config = {
+  /** Set when running behind a reverse proxy, so rate limits use the real client address. */
+  trustProxy: process.env.TRUST_PROXY === "true",
+  rateLimitPerMinute: num(process.env.RATE_LIMIT_PER_MINUTE, 240),
   port: num(process.env.PORT, 3000),
   cluster: process.env.SOLANA_CLUSTER ?? "devnet",
   rpcUrl: process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",

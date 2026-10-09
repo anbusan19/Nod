@@ -1,5 +1,6 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import { Connection, VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
 import type { DB } from "./db/index.js";
@@ -50,8 +51,16 @@ const rpcBlockhash = async (cluster: string) => {
 };
 
 export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash }: Deps) {
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false, trustProxy: config.trustProxy, bodyLimit: 256 * 1024 });
   app.register(cors, { origin: true });
+  // Limits are per API key or device token when one is sent, otherwise per client address.
+  app.register(rateLimit, {
+    global: true,
+    max: config.rateLimitPerMinute,
+    timeWindow: "1 minute",
+    keyGenerator: (req) => (req.headers.authorization ? `t:${req.headers.authorization}` : `ip:${req.ip}`),
+    errorResponseBuilder: (_req, ctx) => ({ statusCode: 429, error: `rate limit exceeded, retry in ${Math.ceil(ctx.ttl / 1000)}s`, retryAfter: Math.ceil(ctx.ttl / 1000) }),
+  });
 
   // Clients send content-type: application/json even on body-less POSTs; treat those as {}.
   app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
@@ -79,7 +88,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
   function agentFrom(req: FastifyRequest, reply: FastifyReply) {
     const key = bearer(req);
     const agent = key
-      ? (db.prepare("SELECT * FROM agents WHERE key_hash = ?").get(hashSecret(key)) as any)
+      ? (db.prepare("SELECT * FROM agents WHERE key_hash = ? AND revoked = 0").get(hashSecret(key)) as any)
       : undefined;
     if (!agent) reply.code(401).send({ error: "invalid agent key" });
     return agent as { id: string; name: string; frozen: number } | undefined;
@@ -104,11 +113,13 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
   const deviceCanSee = (deviceId: string, agentId: string) =>
     !!db.prepare("SELECT 1 FROM agent_devices WHERE device_id = ? AND agent_id = ?").get(deviceId, agentId);
 
+  // Routes live in their own plugin so the rate limiter's per-route hooks are installed before they register.
+  app.register(async (app) => {
   // ---- health -------------------------------------------------------------
   app.get("/health", async () => ({ ok: true, cluster: config.cluster }));
 
   // ---- devices ------------------------------------------------------------
-  app.post("/v1/devices", async (req) => {
+  app.post("/v1/devices", { config: { rateLimit: { max: 20, timeWindow: "1 minute", keyGenerator: (r: FastifyRequest) => `ip:${r.ip}` } } }, async (req) => {
     const body = z.object({ wallet: z.string().optional(), fcmToken: z.string().optional() }).parse(req.body ?? {});
     const id = newId();
     const token = newSecret("nodd");
@@ -145,7 +156,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     return { code, expiresAt };
   });
 
-  app.post("/v1/pairings/redeem", async (req, reply) => {
+  app.post("/v1/pairings/redeem", { config: { rateLimit: { max: 10, timeWindow: "1 minute", keyGenerator: (r: FastifyRequest) => `ip:${r.ip}` } } }, async (req, reply) => {
     const body = z.object({ code: z.string(), name: z.string().min(1).max(60) }).parse(req.body);
     const pairing = db.prepare("SELECT * FROM pairings WHERE code = ?").get(body.code.toUpperCase()) as any;
     if (!pairing || pairing.expires_at < now()) return reply.code(400).send({ error: "invalid or expired code" });
@@ -171,7 +182,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     const rows = db
       .prepare(
         `SELECT a.id, a.name, a.frozen, a.created_at FROM agents a
-         JOIN agent_devices ad ON ad.agent_id = a.id WHERE ad.device_id = ? ORDER BY a.created_at`,
+         JOIN agent_devices ad ON ad.agent_id = a.id WHERE ad.device_id = ? AND a.revoked = 0 ORDER BY a.created_at`,
       )
       .all(device.id) as any[];
     return rows.map((a) => ({
@@ -212,6 +223,43 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     return p;
   });
 
+  // Revoke an agent for good: its key stops working and anything it still has pending is closed.
+  app.delete("/v1/agents/:id", async (req, reply) => {
+    const device = deviceFrom(req, reply);
+    if (!device) return;
+    const { id } = req.params as { id: string };
+    if (!deviceCanSee(device.id, id)) return reply.code(404).send({ error: "not found" });
+    db.prepare("UPDATE agents SET revoked = 1, key_hash = ? WHERE id = ?").run(`revoked:${id}`, id);
+    db.prepare("UPDATE proposals SET status = 'rejected', updated_at = ? WHERE agent_id = ? AND status = 'awaiting_human'").run(now(), id);
+    return { ok: true };
+  });
+
+  // Issue a new API key. The old one stops working immediately; the new one is shown only here.
+  app.post("/v1/agents/:id/rotate-key", async (req, reply) => {
+    const device = deviceFrom(req, reply);
+    if (!device) return;
+    const { id } = req.params as { id: string };
+    if (!deviceCanSee(device.id, id)) return reply.code(404).send({ error: "not found" });
+    const apiKey = newSecret("nodk");
+    db.prepare("UPDATE agents SET key_hash = ? WHERE id = ? AND revoked = 0").run(hashSecret(apiKey), id);
+    return { apiKey };
+  });
+
+  // ---- the agent's own view -----------------------------------------------
+  app.get("/v1/agent/me", async (req, reply) => {
+    const agent = agentFrom(req, reply);
+    if (!agent) return;
+    return { agentId: agent.id, name: agent.name, frozen: !!agent.frozen, policy: getPolicy(db, agent.id) ?? defaultPolicy() };
+  });
+
+  app.get("/v1/agent/proposals", async (req, reply) => {
+    const agent = agentFrom(req, reply);
+    if (!agent) return;
+    const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(100).default(25) }).parse(req.query);
+    const rows = db.prepare("SELECT * FROM proposals WHERE agent_id = ? ORDER BY created_at DESC LIMIT ?").all(agent.id, limit) as unknown as ProposalRow[];
+    return rows.map((r) => publicProposal(expireIfStale(db, r, now())));
+  });
+
   // ---- proposals (agent side) ---------------------------------------------
   app.post("/v1/proposals", async (req, reply) => {
     const agent = agentFrom(req, reply);
@@ -235,10 +283,18 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
               .optional(),
           })
           .optional(),
+        // Lets an agent retry safely: the same key returns the original proposal instead of a duplicate.
+        idempotencyKey: z.string().min(1).max(128).optional(),
         // Which cluster the transaction is for. Defaults to the backend's own cluster.
         cluster: z.enum(["devnet", "mainnet-beta"]).optional(),
       })
       .parse(req.body);
+
+    const idemKey = (req.headers["idempotency-key"] as string | undefined) ?? body.idempotencyKey;
+    if (idemKey) {
+      const prior = db.prepare("SELECT * FROM proposals WHERE agent_id = ? AND idempotency_key = ?").get(agent.id, idemKey) as unknown as ProposalRow | undefined;
+      if (prior) return reply.code(200).header("idempotent-replay", "true").send(publicProposal(expireIfStale(db, prior, now())));
+    }
 
     let summary;
     try {
@@ -259,8 +315,8 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     const id = newId();
     db.prepare(
       `INSERT INTO proposals (id, agent_id, tx_base64, tx_hash, reason, tier, status, block_reason,
-         intent, cluster, lamports, created_at, expires_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         intent, cluster, idempotency_key, lamports, created_at, expires_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       id,
       agent.id,
@@ -272,6 +328,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
       decision.tier === "block" ? decision.reason : null,
       body.intent ? JSON.stringify(body.intent) : null,
       body.cluster ?? config.cluster,
+      idemKey ?? null,
       summary.lamports,
       t,
       t + config.proposalTtlSeconds * 1000,
@@ -377,6 +434,8 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
       "UPDATE proposals SET status = ?, signature = COALESCE(?, signature), error = ?, updated_at = ? WHERE id = ?",
     ).run(body.status, body.signature ?? null, body.error ?? null, now(), p.id);
     return { ok: true };
+  });
+
   });
 
   return app;
