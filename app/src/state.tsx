@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, type Agent, type Proposal } from "./api/client";
+import { tryNormalizeAddress } from "./solana/address";
 import { decodeTransaction, deserialize } from "./solana/decode";
 import { connectWallet, disconnectWallet } from "./solana/mwa";
 import { kv } from "./storage";
@@ -45,7 +46,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         await api.ensureDevice();
-        setWallet((await kv.get("walletAddress")) ?? undefined);
+        // Earlier builds stored the raw base64 form; normalize it (or drop it if unusable).
+        setWallet(tryNormalizeAddress(await kv.get("walletAddress")));
         await refresh();
       } catch (e) {
         setError((e as Error).message);

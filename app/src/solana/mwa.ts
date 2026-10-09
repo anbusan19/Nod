@@ -1,6 +1,7 @@
 import { transact, type Web3MobileWallet } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
-import { PublicKey, type VersionedTransaction } from "@solana/web3.js";
+import type { VersionedTransaction } from "@solana/web3.js";
 import { config } from "../config";
+import { normalizeAddress } from "./address";
 import { connection } from "./connection";
 import { kv } from "../storage";
 
@@ -17,10 +18,6 @@ export interface WalletSession {
   label?: string;
 }
 
-function decodeAddress(b64: string): string {
-  return new PublicKey(Buffer.from(b64, "base64")).toBase58();
-}
-
 async function authorizeOrReauthorize(wallet: Web3MobileWallet) {
   const cached = await kv.get("mwaAuthToken");
   const auth = cached
@@ -29,7 +26,7 @@ async function authorizeOrReauthorize(wallet: Web3MobileWallet) {
   const result = auth ?? (await wallet.authorize({ chain: `solana:${cluster}`, identity: IDENTITY }));
   await kv.set("mwaAuthToken", result.auth_token);
   const account = result.accounts[0];
-  const address = account.address.length === 44 || account.address.length === 43 ? account.address : decodeAddress(account.address);
+  const address = normalizeAddress(account.address);
   await kv.set("walletAddress", address);
   return { address, label: account.label };
 }
