@@ -37,6 +37,16 @@ beforeEach(() => {
 });
 
 describe("api", () => {
+  it("stores and returns the agent's stated intent", async () => {
+    const { dev, agent } = await setup();
+    const intent = { sol: 0.01, recipient: dest.toBase58() };
+    const p = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000), reason: "x", intent })).body;
+    expect(p.intent).toEqual(intent);
+    expect((await json("GET", `/v1/proposals/${p.id}`, dev.deviceToken)).body.intent).toEqual(intent);
+    const none = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;
+    expect(none.intent).toBeNull();
+  });
+
   it("refreshes only the blockhash and rebinds the hash", async () => {
     const { dev, agent } = await setup();
     const p = (await json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) })).body;

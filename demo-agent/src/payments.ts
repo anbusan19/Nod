@@ -25,7 +25,12 @@ const scenarios = [
 ];
 
 for (const s of scenarios) {
-  const proposal = await nod.propose({ transaction: await buildPayment(s.sol), reason: s.reason });
+  const proposal = await nod.propose({
+    transaction: await buildPayment(s.sol),
+    reason: s.reason,
+    // Honest agent: states exactly what the transaction does, so the phone can confirm it.
+    intent: { sol: s.sol, recipient: vendor.toBase58() },
+  });
   console.log(`[${s.reason}] ${s.sol} SOL -> ${proposal.status} (${proposal.tier})`);
   if (proposal.status === "blocked") {
     console.log(`  blocked: ${proposal.blockReason}`);

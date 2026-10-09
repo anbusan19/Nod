@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS proposals (
   tier TEXT NOT NULL,
   status TEXT NOT NULL,
   block_reason TEXT,
+  intent TEXT,
   lamports INTEGER NOT NULL DEFAULT 0,
   signature TEXT,
   error TEXT,
@@ -59,5 +60,8 @@ export function openDb(path: string): DB {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
   db.exec(SCHEMA);
+  // Databases created before `intent` existed need the column added.
+  const cols = db.prepare("PRAGMA table_info(proposals)").all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === "intent")) db.exec("ALTER TABLE proposals ADD COLUMN intent TEXT");
   return db;
 }

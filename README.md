@@ -249,7 +249,7 @@ An approval screen that repeats what the agent *claims* defeats the purpose. Nod
    - Setting a new authority on an account
    - Recipient not seen before
    - Amount above the agent's usual range
-5. **Show agent metadata separately**, labeled "agent says: …", never mixed with decoded facts.
+5. **Show agent metadata separately**, labeled "agent says: …", never mixed with decoded facts. If the agent also states a structured `intent` (amount and recipient), the phone checks it against the decoded transaction. A mismatch shows a red banner and requires an extra confirmation step.
 6. **Block expired proposals.** If the blockhash or quote is stale, the app asks the backend for a fresh transaction, then decodes and shows that new transaction from scratch.
 
 The rule: **the phone only signs what it has decoded and simulated itself.**
@@ -521,6 +521,7 @@ const nod = new Nod({ apiUrl: process.env.NOD_API_URL!, agentKey: process.env.NO
 const proposal = await nod.propose({
   transaction: serializedTxBase64,
   reason: "Rebalance: SOL is 12% above target allocation",
+  intent: { sol: 0.5, recipient: "<address it says it pays>" }, // optional; checked by the phone
 });
 
 const result = await nod.waitForResult(proposal.id); // approved | rejected | expired | confirmed

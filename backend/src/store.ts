@@ -21,6 +21,7 @@ export interface ProposalRow {
   tier: Tier;
   status: Status;
   block_reason: string | null;
+  intent: string | null;
   lamports: number;
   signature: string | null;
   error: string | null;
@@ -101,6 +102,7 @@ export function publicProposal(p: ProposalRow) {
     tier: p.tier,
     status: p.status,
     blockReason: p.block_reason,
+    intent: p.intent ? JSON.parse(p.intent) : null,
     signature: p.signature,
     error: p.error,
     createdAt: p.created_at,

@@ -32,6 +32,7 @@ export interface Proposal {
   tier: "auto" | "nod" | "council" | "block";
   status: ProposalStatus;
   blockReason: string | null;
+  intent: { sol?: number; recipient?: string } | null;
   signature: string | null;
   error: string | null;
   createdAt: number;

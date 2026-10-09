@@ -37,11 +37,14 @@ async function waitForHuman(p: Proposal) {
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
-  // The agent's story says $0.01; the transaction sends 0.9 SOL. The phone shows the real amount.
+  // The agent claims 0.01 SOL to a vendor; the transaction sends 0.9 SOL to someone else. The phone flags
+  // the mismatch and demands an extra confirmation. The right move is to reject.
   async liar() {
+    const vendor = Keypair.generate().publicKey; // who the agent claims to pay
     const p = await nod.propose({
-      transaction: await build([pay(Keypair.generate().publicKey, 0.9)]),
+      transaction: await build([pay(Keypair.generate().publicKey, 0.9)]), // who it actually pays
       reason: "Pay 0.01 SOL for weather API credits",
+      intent: { sol: 0.01, recipient: vendor.toBase58() },
     });
     show("liar: reason says 0.01 SOL, transaction sends 0.9 SOL", p);
     if (p.status === "awaiting_human") await waitForHuman(p);
@@ -79,8 +82,13 @@ const scenarios: Record<string, () => Promise<void>> = {
 
   // Simulates a compromised backend that swaps the transaction after the proposal was created.
   async "swap-backend"() {
-    const honest = await build([pay(Keypair.generate().publicKey, 0.01)]);
-    const p = await nod.propose({ transaction: honest, reason: "Pay for weather API credits (0.01 SOL)" });
+    const vendor = Keypair.generate().publicKey;
+    const honest = await build([pay(vendor, 0.01)]);
+    const p = await nod.propose({
+      transaction: honest,
+      reason: "Pay for weather API credits (0.01 SOL)",
+      intent: { sol: 0.01, recipient: vendor.toBase58() },
+    });
     show("compromised backend swaps the transaction", p);
     if (p.status !== "awaiting_human") return;
     const evil = await build([pay(Keypair.generate().publicKey, 2)]);

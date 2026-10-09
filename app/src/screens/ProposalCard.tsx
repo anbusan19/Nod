@@ -5,6 +5,7 @@ import { api, type Proposal } from "../api/client";
 import { Badge, Button, Card, Mono, T } from "../components/ui";
 import { approve, prepare, type Prepared } from "../solana/approve";
 import { formatSol, formatTokenAmount, shorten, type DecodedInstruction } from "../solana/decode";
+import { checkIntent } from "../solana/intent";
 import { PROGRAM_NAMES } from "../solana/programs";
 import { useApp } from "../state";
 import { useColors } from "../theme/colors";
@@ -58,6 +59,7 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
   const [loadError, setLoadError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<{ ok: boolean; text: string }>();
+  const [confirming, setConfirming] = useState(false);
   const left = useCountdown(proposal.expiresAt);
   const actionable = proposal.status === "awaiting_human" && left > 0 && !outcome;
 
@@ -106,6 +108,8 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
   }, [proposal.id, refresh]);
 
   const agentName = agents.find((a) => a.id === proposal.agentId)?.name ?? "Agent";
+  const intentCheck = prepared && wallet ? checkIntent(prepared.decoded, wallet, proposal.intent) : undefined;
+  const mismatch = intentCheck?.status === "mismatch";
   const sol = prepared?.simulation.deltas.filter((d) => d.kind === "sol") ?? [];
   const tokens = prepared?.simulation.deltas.filter((d) => d.kind === "token") ?? [];
 
@@ -128,6 +132,18 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
         <T>{proposal.reason || "No reason given"}</T>
         <T size={12} muted>Written by the agent, not verified.</T>
       </Card>
+
+      {intentCheck?.status === "mismatch" && (
+        <Card style={{ backgroundColor: c.dangerBg, borderColor: c.danger, gap: 6 }}>
+          <T weight="bold" style={{ color: c.danger }}>Does not match what the agent said</T>
+          {intentCheck.problems.map((pr) => (
+            <T key={pr} size={14} style={{ color: c.danger }}>{pr}</T>
+          ))}
+          <T size={13} muted>Trust the decoded details below, not the agent's description.</T>
+        </Card>
+      )}
+      {intentCheck?.status === "match" && <Badge label="Matches what the agent said" tone="ok" />}
+      {intentCheck?.status === "none" && prepared && <T size={13} muted>The agent did not state an amount or recipient to check.</T>}
 
       {!wallet && <Card><T>Connect your wallet in Settings to review and sign.</T></Card>}
       {wallet && !prepared && !loadError && <Card><T muted>Decoding and simulating on this phone…</T></Card>}
@@ -198,11 +214,27 @@ export function ProposalCard({ proposal: initial, onClose }: { proposal: Proposa
         </Card>
       )}
 
-      {actionable && (
+      {actionable && !confirming && (
         <View style={{ gap: 10 }}>
-          <Button title="Approve" onPress={onApprove} loading={busy} disabled={!prepared || prepared.blockers.length > 0} />
-          <Button title="Reject" kind="danger" onPress={onReject} disabled={busy} />
+          {mismatch ? (
+            <Button title="Review and approve anyway" kind="secondary" onPress={() => setConfirming(true)} disabled={!prepared || prepared.blockers.length > 0} />
+          ) : (
+            <Button title="Approve" onPress={onApprove} loading={busy} disabled={!prepared || prepared.blockers.length > 0} />
+          )}
+          <Button title="Reject" kind={mismatch ? "primary" : "danger"} onPress={onReject} disabled={busy} />
         </View>
+      )}
+
+      {actionable && confirming && (
+        <Card style={{ borderColor: c.danger, gap: 12 }}>
+          <T weight="bold" style={{ color: c.danger }}>Approve something that doesn't match?</T>
+          <T size={14}>
+            The agent described this transaction differently from what it does.
+            {sol[0] && sol[0].delta < 0n ? ` It will move ${formatSol(-sol[0].delta)} out of your wallet.` : ""}
+          </T>
+          <Button title="Send anyway" kind="danger" onPress={onApprove} loading={busy} />
+          <Button title="Go back" kind="secondary" onPress={() => setConfirming(false)} disabled={busy} />
+        </Card>
       )}
     </ScrollView>
   );

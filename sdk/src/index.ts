@@ -9,6 +9,14 @@ export type ProposalStatus =
   | "confirmed"
   | "failed";
 
+/** What the agent says the transaction does. The phone checks it against the real transaction. */
+export interface Intent {
+  /** Total SOL the transaction sends. */
+  sol?: number;
+  /** The single address that should receive it. */
+  recipient?: string;
+}
+
 export interface Proposal {
   id: string;
   agentId: string;
@@ -18,6 +26,7 @@ export interface Proposal {
   tier: "auto" | "nod" | "council" | "block";
   status: ProposalStatus;
   blockReason: string | null;
+  intent: Intent | null;
   signature: string | null;
   error: string | null;
   createdAt: number;
@@ -68,7 +77,7 @@ export class Nod {
   }
 
   /** Submit a base64-serialized Solana transaction for approval. */
-  propose(input: { transaction: string; reason?: string }): Promise<Proposal> {
+  propose(input: { transaction: string; reason?: string; intent?: Intent }): Promise<Proposal> {
     return this.req("POST", "/v1/proposals", input);
   }
 

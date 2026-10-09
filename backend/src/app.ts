@@ -202,7 +202,14 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
   app.post("/v1/proposals", async (req, reply) => {
     const agent = agentFrom(req, reply);
     if (!agent) return;
-    const body = z.object({ transaction: z.string().min(1), reason: z.string().max(280).default("") }).parse(req.body);
+    const body = z
+      .object({
+        transaction: z.string().min(1),
+        reason: z.string().max(280).default(""),
+        // What the agent says the transaction does. The phone compares this to the real bytes.
+        intent: z.object({ sol: z.number().positive().optional(), recipient: z.string().max(64).optional() }).optional(),
+      })
+      .parse(req.body);
 
     let summary;
     try {
@@ -223,8 +230,8 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
     const id = newId();
     db.prepare(
       `INSERT INTO proposals (id, agent_id, tx_base64, tx_hash, reason, tier, status, block_reason,
-         lamports, created_at, expires_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+         intent, lamports, created_at, expires_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       id,
       agent.id,
@@ -234,6 +241,7 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
       decision.tier,
       status,
       decision.tier === "block" ? decision.reason : null,
+      body.intent ? JSON.stringify(body.intent) : null,
       summary.lamports,
       t,
       t + config.proposalTtlSeconds * 1000,
