@@ -562,13 +562,15 @@ Update this table honestly before submitting.
 | Feature | Status |
 |---|---|
 | MWA authorize + sign on a real device | [x] confirmed on devnet (Phantom, OPPO CPH2213) |
-| FCM push to the device | [ ] code written, needs google-services.json |
-| Local decoder: SOL and SPL transfers | [x] unit-tested |
+| FCM push to the device | [x] confirmed on lock screen |
+| Local decoder: SOL and SPL transfers | [x] unit-tested, SOL confirmed on device |
 | Simulation + balance deltas | [x] working on device |
 | Biometric gate | [x] working on device (screen-lock fallback) |
 | Tier 1 / Tier 2 policy engine | [x] tier 2 working end to end; tier 1 does not execute yet |
 | Activity feed | [x] |
 | Demo payment agent | [x] working against devnet |
+| Tamper demos (blocked programs, delegate, assign, swapped transaction) | [x] confirmed on device |
+| Blockhash refresh before signing | [x] unit-tested, awaiting device re-test |
 | Jupiter swap decoding | [ ] |
 | Squads multisig (tier 3) | [ ] stretch |
 | Squads on-chain spending limits | [ ] stretch |
