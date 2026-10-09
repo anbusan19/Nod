@@ -52,6 +52,8 @@ export function ConnectServer() {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
+          returnKeyType="go"
+          onSubmitEditing={connect}
           style={{ fontFamily: fonts.mono.regular, fontSize: 14, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 12, padding: 12 }}
         />
         {message && <T size={13} style={{ color: c.danger }}>{message}</T>}
