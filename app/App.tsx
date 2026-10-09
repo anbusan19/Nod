@@ -7,6 +7,7 @@ import { ActivityIndicator, BackHandler, Pressable, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { T } from "./src/components/ui";
 import { onProposalOpened, registerForPush } from "./src/push/notifications";
+import { About } from "./src/screens/About";
 import { Agents } from "./src/screens/Agents";
 import { ConnectServer } from "./src/screens/ConnectServer";
 import { Inbox } from "./src/screens/Inbox";
@@ -31,6 +32,7 @@ function Shell() {
   const c = useColors();
   const { ready, needsServer, proposals, openProposalId, openProposal } = useApp();
   const [tab, setTab] = useState<Tab>("Approvals");
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
     if (!ready || needsServer) return;
@@ -40,13 +42,14 @@ function Shell() {
 
   // The Android back button closes an open approval card instead of leaving the app.
   useEffect(() => {
-    if (!openProposalId) return;
+    if (!openProposalId && !showAbout) return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      openProposal(undefined);
+      if (openProposalId) openProposal(undefined);
+      else setShowAbout(false);
       return true;
     });
     return () => sub.remove();
-  }, [openProposalId, openProposal]);
+  }, [openProposalId, showAbout, openProposal]);
 
   if (!ready) {
     return <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}><ActivityIndicator /></View>;
@@ -56,6 +59,7 @@ function Shell() {
 
   const open = openProposalId ? proposals.find((p) => p.id === openProposalId) : undefined;
   if (open) return <ProposalCard key={open.id} proposal={open} onClose={() => openProposal(undefined)} />;
+  if (showAbout) return <About onClose={() => setShowAbout(false)} />;
 
   const pending = proposals.filter((p) => p.status === "awaiting_human").length;
   return (
@@ -64,7 +68,7 @@ function Shell() {
         {tab === "Approvals" && <Inbox mode="approvals" />}
         {tab === "Activity" && <Inbox mode="activity" />}
         {tab === "Agents" && <Agents />}
-        {tab === "Settings" && <Settings />}
+        {tab === "Settings" && <Settings onOpenAbout={() => setShowAbout(true)} />}
       </View>
       <View style={{ flexDirection: "row", borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.card }}>
         {TABS.map((t) => {

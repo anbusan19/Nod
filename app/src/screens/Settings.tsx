@@ -17,7 +17,7 @@ import { useApp } from "../state";
 import { kv } from "../storage";
 import { applyThemePref, useColors, type ThemePref } from "../theme/colors";
 
-export function Settings() {
+export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
   const c = useColors();
   const { wallet, connect, disconnect, changeServer } = useApp();
   const [server, setServer] = useState("");
@@ -340,6 +340,19 @@ export function Settings() {
         </View>
       </Card>
 
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="About Nod"
+        onPress={onOpenAbout}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+      >
+        <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 }}>
+          <Feather name="info" size={20} color={c.accentText} />
+          <T weight="semibold" style={{ flex: 1 }}>About Nod</T>
+          <Feather name="chevron-right" size={20} color={c.muted} />
+        </Card>
+      </Pressable>
     </ScrollView>
   );
 }
