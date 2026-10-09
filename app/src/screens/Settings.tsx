@@ -3,6 +3,7 @@ import { Linking, ScrollView, Switch, TextInput, View } from "react-native";
 import { getServerUrl } from "../api/client";
 import { inspectServer, parseServerUrl } from "../api/server";
 import { fonts } from "../theme/fonts";
+import { ThemeSwitch } from "../components/ThemeSwitch";
 import { Button, Card, Checkbox, Mono, T } from "../components/ui";
 import type { AuthPrefs } from "../security/authPlan";
 import { availableSensors, confirmWithBiometrics, currentPlan, savePrefs } from "../security/biometric";
@@ -128,15 +129,9 @@ export function Settings() {
         )}
       </Card>
 
-      <Card style={{ gap: 10 }}>
+      <Card style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 }}>
         <T weight="semibold">Appearance</T>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {(["system", "light", "dark"] as const).map((p) => (
-            <View key={p} style={{ flex: 1 }}>
-              <Button title={p[0].toUpperCase() + p.slice(1)} kind={pref === p ? "primary" : "secondary"} onPress={() => choose(p)} />
-            </View>
-          ))}
-        </View>
+        <ThemeSwitch value={pref} onChange={choose} />
       </Card>
 
       <Card style={{ gap: 10 }}>
