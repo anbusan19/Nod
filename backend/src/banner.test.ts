@@ -7,16 +7,16 @@ describe("startup banner", () => {
   it("is plain text without colour", () => {
     const out = renderBanner(info, { color: false, columns: 100 });
     expect(out).not.toContain("\x1b");
-    for (const s of ["███╗", "0.2.1", "devnet", "/home/me/.nod", "http://localhost:3000", "http://192.168.1.5:3000", "off", "Ctrl+C"]) expect(out).toContain(s);
+    for (const s of ["██", "Nothing moves without your Nod.", "0.2.1", "devnet", "/home/me/.nod", "http://localhost:3000", "http://192.168.1.5:3000", "off", "Ctrl+C"]) expect(out).toContain(s);
     expect(out).toMatch(/[⠀-⣿]/); // the knot
   });
   it("uses the lavender accent with colour", () => expect(renderBanner(info, { color: true, columns: 100 })).toContain("\x1b[38;2;153;172;255m"));
-  it("drops the knot on a narrow terminal but keeps the lettering", () => {
+  it("falls back to a small wordmark on a very narrow terminal", () => expect(renderBanner(info, { color: false, columns: 30 })).toContain("N O D"));
+  it("drops the logo on a narrow terminal but keeps the wordmark", () => {
     const out = renderBanner(info, { color: false, columns: 60 });
     expect(out).not.toMatch(/[\u2800-\u28ff]/);
-    expect(out).toContain("███╗");
+    expect(out).toContain("██");
   });
-  it("falls back to a small wordmark on a very narrow terminal", () => expect(renderBanner(info, { color: false, columns: 30 })).toContain("N O D"));
   it("never exceeds 80 columns when the logo is shown", () => {
     for (const line of renderBanner({ ...info, lan: [] }, { color: false, columns: 80 }).split("\n")) expect(line.length).toBeLessThanOrEqual(80);
   });

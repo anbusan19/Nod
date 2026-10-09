@@ -3,35 +3,41 @@
  * and how to connect. Pure functions, so the layout is testable and plain-text when colour is off.
  */
 
-/** The knot as Braille dots (26 columns by 13 rows, from app/assets/icon.png). */
+/** The knot as Braille dots (36 columns, from app/assets/icon.png). */
 const LOGO: string[] = [
-  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣤⣾⣿⣿⣿⣯⣆⠄⠀⠀⠀",
-  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀",
-  "⠀⠀⠀⢀⣠⣴⡦⠶⡒⣶⣶⡿⠿⠿⣿⣟⠉⠉⠉⠉⢿⣿⡿⢿⡷⠀",
-  "⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣯⣷⡄⣴⣿⠛⠛⢦⡀⠀⢘⣿⣧⡀⠀⠄",
-  "⢠⣿⣿⣿⣿⡿⠿⠛⣿⣿⣿⣿⡿⠿⣿⣶⣦⡄⠙⠦⣼⣿⣿⣿⢀⠀",
-  "⣿⣿⣿⣿⡯⠁⠀⢠⣿⣿⣿⣿⠀⠀⠀⠙⢿⣿⣿⣼⣿⣿⣿⣏⠀⠀",
-  "⢻⣿⣿⡿⣧⣀⠀⢘⣿⣿⣿⣿⠀⠀⠀⠀⢀⣼⣿⣿⣿⡿⣫⠗⠀⠀",
-  "⠀⠻⣿⣿⣿⣯⣂⣨⣿⣿⣿⣿⣄⣤⣶⣾⣿⣿⣿⣿⣿⡟⡁⠀⠀⠀",
-  "⠀⠀⠉⠻⢿⣿⣿⣿⣿⣿⡟⣿⣿⣿⣿⣿⣿⡿⠿⢻⣿⣷⡷⠁⠀⠀",
-  "⠀⠀⠀⠀⠀⠁⠙⠛⠻⣿⣷⣮⣿⣿⡟⠉⠉⠀⠀⠸⣿⣿⠏⠇⠀⠀",
-  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⣿⣿⣿⣯⡓⠲⢤⣤⣶⣿⡿⠋⠰⠃⠀⠀",
-  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠿⣿⣿⣿⡄⠀⠀⢄⠀⢠⠄⠁⠀⠀⠀",
-  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠻⢾⠷⠶⡶⠖⠀⠁⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣀⣤⣥⣥⣭⣭⣬⣈⠢⢀⡀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣶⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣧⣦⡀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣺⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣗⣷⣿⣿⣯⣿⣦⠀⠀",
+  "⠀⠀⠀⠀⠀⣀⣠⣴⢷⠴⠶⠞⠾⠶⢾⢿⠿⠿⠿⠿⣿⡿⠁⠀⠀⠀⠀⠉⠿⣿⣿⡿⢿⣿⠖⠀",
+  "⠀⠀⠀⣠⣮⣿⣿⣿⣵⣿⣿⣯⣮⣿⡟⠵⡄⠀⣈⣬⣯⡿⠷⢦⡀⠀⠀⠀⠨⣿⣿⡇⠀⠅⠨⠀",
+  "⠀⢀⣾⣿⣟⢿⣿⡿⡿⣿⣿⣿⣿⣷⣾⣧⣻⣧⣿⣿⣟⢐⣀⠈⠙⢶⡀⠀⢰⣿⣿⡧⣦⡂⢀⠐",
+  "⢠⣿⣿⣿⣵⣿⣿⡯⠟⠋⠉⣴⣿⣿⣿⣯⣿⠋⠻⢿⣿⣿⣷⣆⡆⠀⠙⢦⣾⣿⣿⣿⣿⠂⡂⠀",
+  "⢸⣿⣿⡿⡿⣿⡏⠁⠀⠀⠨⡿⡿⣿⣿⣿⡏⠀⠀⠀⠀⠙⠿⢿⢿⣷⣭⡿⣿⣿⣿⡟⠏⠄⠀⠀",
+  "⣸⣿⣿⣯⣪⣿⡇⠀⠀⠀⢨⣿⣿⣿⣿⣿⡅⠀⠀⠀⠀⠀⠀⠉⣵⣿⣿⣯⣯⣿⣷⡇⣅⠅⠀⠀",
+  "⠉⢿⣿⣟⢟⢻⣿⣦⡀⠀⢰⣟⣿⣿⣿⣿⡇⠀⠀⠀⠀⢠⣤⣾⣻⣿⣿⣟⢟⣟⣣⠞⠁⠀⠀⠀",
+  "⠀⠘⢿⣗⣕⣿⣿⣧⣈⣂⣲⣟⣷⣿⣿⣿⣢⣀⣤⣶⣷⣿⣿⣿⣻⣾⣿⣗⣕⣟⣃⠈⡀⠀⠀⠀",
+  "⠀⠀⠀⠙⠿⣿⣏⣽⢿⣿⣿⡿⣿⣿⡿⢿⢿⣿⣿⣿⣿⣿⣿⣿⢿⣿⡿⡿⡿⣧⣼⡄⠄⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠈⠙⠗⢕⣿⣿⣯⣮⣿⡇⡙⢿⣿⣿⣿⣻⡾⡿⠗⠁⠁⠀⣯⣿⣿⣿⠇⡄⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠈⠉⢻⣿⣿⣷⣊⣿⣛⢾⠉⠀⠀⠀⠀⠀⢐⢛⣾⣿⡟⠀⡃⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣾⣿⣿⡐⢑⠲⣤⣤⣤⣶⣿⣷⣵⠟⠁⡰⠂⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢿⢽⢿⣿⡿⡢⠀⠀⠉⠉⠉⠉⠁⠁⠀⠴⠃⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⢽⣿⣯⡮⢪⡄⠀⡄⠁⠄⠠⠨⡬⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠋⠛⢻⠿⠿⠛⡧⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀",
 ];
 
-const LOGO_WIDTH = 26;
-/** The big NOD lettering, in the outlined "shadow" style of terminal installers. */
-const WORDMARK: string[] = [
-  "███╗   ██╗ ██████╗ ██████╗ ",
-  "████╗  ██║██╔═══██╗██╔══██╗",
-  "██╔██╗ ██║██║   ██║██║  ██║",
-  "██║╚██╗██║██║   ██║██║  ██║",
-  "██║ ╚████║╚██████╔╝██████╔╝",
-  "╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ",
-];
+const LOGO_WIDTH = 34;
 /** Below this width the logo would wrap and wreck the layout, so only the text is shown. */
-const MIN_WIDTH_FOR_LOGO = 76;
+const MIN_WIDTH_FOR_LOGO = 78;
+
+/** "NOD" in chunky block letters, two terminal cells per pixel so it is as wide as it is tall. */
+const GLYPHS: Record<string, string[]> = {
+  N: ["#   #", "##  #", "# # #", "#  ##", "#   #"],
+  O: [" ### ", "#   #", "#   #", "#   #", " ### "],
+  D: ["#### ", "#   #", "#   #", "#   #", "#### "],
+};
+const WORDMARK: string[] = Array.from({ length: 5 }, (_, row) =>
+  [..."NOD"].map((ch) => [...GLYPHS[ch][row]].map((px) => (px === "#" ? "██" : "  ")).join("")).join("   ").trimEnd(),
+);
 
 export interface BannerInfo {
   version: string;
@@ -63,6 +69,7 @@ export function renderBanner(info: BannerInfo, opts: { color: boolean; columns?:
   const urls = [`http://localhost:${info.port}`, ...info.lan.map((a) => `http://${a}:${info.port}`)];
   const text: string[] = [
     ...(opts.columns === undefined || opts.columns >= 40 ? WORDMARK.map((l) => paint(BOLD + LAVENDER, l)) : [paint(BOLD + LAVENDER, "N O D")]),
+    "",
     paint(DIM, "Nothing moves without your Nod."),
     "",
     `${paint(DIM, "version  ")} ${info.version}`,
@@ -79,9 +86,11 @@ export function renderBanner(info: BannerInfo, opts: { color: boolean; columns?:
   const lines: string[] = [];
   if (withLogo) {
     const rows = Math.max(LOGO.length, text.length);
+    const top = Math.max(0, Math.floor((LOGO.length - text.length) / 2));
     for (let i = 0; i < rows; i++) {
       const art = (LOGO[i] ?? "").padEnd(LOGO_WIDTH, " ");
-      lines.push(`${paint(LAVENDER, art)}  ${text[i] ?? ""}`.trimEnd());
+      const t = text[i - top] ?? "";
+      lines.push(`${paint(LAVENDER, art)}  ${t}`.trimEnd());
     }
   } else {
     lines.push(...text);
