@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "pair": "tsx src/pair.ts",
-    "payments": "tsx src/payments.ts",
+    "pair": "tsx --env-file-if-exists=.env src/pair.ts",
+    "payments": "tsx --env-file-if-exists=.env src/payments.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
