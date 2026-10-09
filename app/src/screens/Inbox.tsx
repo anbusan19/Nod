@@ -1,8 +1,9 @@
-import { FlatList, Image, Pressable, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
 import type { Proposal } from "../api/client";
 import { Badge, Card, Mono, T } from "../components/ui";
 import { useApp } from "../state";
 import { formatSol, deserialize, decodeTransaction, shorten } from "../solana/decode";
+import { Logo } from "../components/Logo";
 import { useColors } from "../theme/colors";
 
 function summary(p: Proposal): string {
@@ -61,7 +62,7 @@ export function Inbox({ mode }: { mode: "approvals" | "activity" }) {
       ListHeaderComponent={
         <View style={{ gap: 8, marginBottom: 4 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Image source={require("../../assets/logo.png")} style={{ width: 36, height: 36, borderRadius: 10 }} />
+            <Logo size={36} radius={10} />
             <T size={24} weight="bold">{mode === "approvals" ? "Needs your Nod" : "Activity"}</T>
           </View>
           {error && <T size={13} style={{ color: c.danger }}>Can't reach the backend: {error}</T>}

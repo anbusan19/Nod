@@ -2,13 +2,14 @@ import { Feather } from "@expo/vector-icons";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { getServerUrl } from "../api/client";
 import { SUPPORTED_API_VERSION } from "../api/server";
 import { loadServers, normalizeUrl } from "../api/servers";
 import { Card, Mono, T } from "../components/ui";
 import { config } from "../config";
 import { kv } from "../storage";
+import { Logo } from "../components/Logo";
 import { useColors } from "../theme/colors";
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -47,7 +48,7 @@ export function About({ onClose }: { onClose: () => void }) {
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}>
         <View style={{ alignItems: "center", gap: 10, paddingVertical: 12 }}>
-          <Image source={require("../../assets/icon.png")} style={{ width: 120, height: 120, borderRadius: 28 }} accessibilityLabel="Nod app icon" />
+          <Logo size={120} radius={28} />
           <T size={28} weight="bold">Nod</T>
           <T muted style={{ textAlign: "center" }}>Nothing moves without your Nod.</T>
         </View>

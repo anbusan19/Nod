@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Image, ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View } from "react-native";
 import { inspectServer, parseServerUrl } from "../api/server";
 import { Button, Card, T } from "../components/ui";
 import { useApp } from "../state";
+import { Logo } from "../components/Logo";
 import { useColors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 
@@ -35,7 +36,7 @@ export function ConnectServer() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingTop: 48 }} keyboardShouldPersistTaps="handled">
-      <Image source={require("../../assets/logo.png")} style={{ width: 64, height: 64, borderRadius: 16 }} />
+      <Logo size={64} radius={16} />
       <T size={28} weight="bold">Welcome to Nod</T>
       <T muted>Nothing moves without your Nod. This app approves what your AI agents want to do with your money, one decoded card at a time.</T>
 
