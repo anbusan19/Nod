@@ -55,6 +55,35 @@ export function Button({
   );
 }
 
+/** A labelled checkbox row. Tapping anywhere on the row toggles it. */
+export function Checkbox({ label, hint, checked, disabled, onChange }: { label: string; hint?: string; checked: boolean; disabled?: boolean; onChange: (next: boolean) => void }) {
+  const c = useColors();
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled: !!disabled }}
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={() => onChange(!checked)}
+      style={{ flexDirection: "row", gap: 12, alignItems: "flex-start", opacity: disabled ? 0.45 : 1 }}
+    >
+      <View
+        style={{
+          width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, marginTop: 1,
+          borderColor: checked ? c.primary : c.muted, backgroundColor: checked ? c.primary : "transparent",
+          alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {checked && <T size={15} weight="bold" style={{ color: c.onPrimary }}>✓</T>}
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <T weight="semibold">{label}</T>
+        {hint ? <T size={13} muted>{hint}</T> : null}
+      </View>
+    </Pressable>
+  );
+}
+
 export function Badge({ label, tone }: { label: string; tone: "danger" | "warn" | "ok" | "neutral" }) {
   const c = useColors();
   const map = {

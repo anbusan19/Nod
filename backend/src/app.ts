@@ -143,9 +143,12 @@ export function buildApp({ db, push, now = Date.now, getBlockhash = rpcBlockhash
   app.patch("/v1/devices/me", async (req, reply) => {
     const device = deviceFrom(req, reply);
     if (!device) return;
-    const body = z.object({ wallet: z.string().optional(), fcmToken: z.string().optional() }).parse(req.body ?? {});
-    db.prepare("UPDATE devices SET wallet = COALESCE(?, wallet), fcm_token = COALESCE(?, fcm_token) WHERE id = ?").run(
+    // `fcmToken: null` means "stop sending me push notifications"; leaving it out leaves the token alone.
+    const body = z.object({ wallet: z.string().optional(), fcmToken: z.string().nullable().optional() }).parse(req.body ?? {});
+    const clearPush = body.fcmToken === null;
+    db.prepare("UPDATE devices SET wallet = COALESCE(?, wallet), fcm_token = CASE WHEN ? THEN NULL ELSE COALESCE(?, fcm_token) END WHERE id = ?").run(
       body.wallet ?? null,
+      clearPush ? 1 : 0,
       body.fcmToken ?? null,
       device.id,
     );

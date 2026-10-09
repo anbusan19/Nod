@@ -14,8 +14,14 @@ Notifications.setNotificationHandler({
 });
 
 /** Registers the device's FCM token with the backend. Safe to call repeatedly. */
+/** True when the user switched push off in Settings, so it must not quietly come back at the next launch. */
+export async function pushOptedOut(): Promise<boolean> {
+  return (await kv.get("pushOptOut")) === "1";
+}
+
 export async function registerForPush(): Promise<{ ok: boolean; reason?: string }> {
   if (Platform.OS !== "android") return { ok: false, reason: "Android only" };
+  if (await pushOptedOut()) return { ok: false, reason: "Turned off in Settings" };
   try {
     await Notifications.setNotificationChannelAsync("approvals", {
       name: "Approvals",
@@ -34,9 +40,27 @@ export async function registerForPush(): Promise<{ ok: boolean; reason?: string 
   }
 }
 
+/** Settings toggle ON: allow push again, ask for permission if needed, and register with the backend. */
+export async function enablePush(): Promise<{ ok: boolean; reason?: string }> {
+  await kv.remove("pushOptOut");
+  return registerForPush();
+}
+
+/**
+ * Settings toggle OFF: tell the backend to forget this phone's push token, and remember the choice.
+ * Android's notification permission stays as it is; an app cannot revoke it itself.
+ */
+export async function disablePush(): Promise<void> {
+  // Ask the backend first. Remember "off" only once it has agreed, so the two can't disagree.
+  await api.updateDevice({ fcmToken: null });
+  await kv.set("pushOptOut", "1");
+  await kv.remove("pushServer");
+}
+
 /** Whether push is working for the backend in use right now. */
 export async function getPushStatus(): Promise<PushStatus> {
   if (Platform.OS !== "android") return "off";
+  if (await pushOptedOut()) return "off";
   const perm = await Notifications.getPermissionsAsync();
   return decidePushStatus({
     granted: perm.granted,
@@ -53,8 +77,17 @@ export function onProposalOpened(cb: (proposalId: string) => void): () => void {
     const id = (data as any)?.proposalId;
     if (typeof id === "string") cb(id);
   };
-  Notifications.getLastNotificationResponseAsync().then((r) => r && handle(r));
-  const a = Notifications.addNotificationResponseReceivedListener(handle);
+  // A tapped notification that launched the app is replayed here. Open it once, then forget it,
+  // or the same old card would reopen every time the app starts.
+  Notifications.getLastNotificationResponseAsync().then((r) => {
+    if (!r) return;
+    handle(r);
+    Notifications.clearLastNotificationResponse();
+  });
+  const a = Notifications.addNotificationResponseReceivedListener((r) => {
+    handle(r);
+    Notifications.clearLastNotificationResponse();
+  });
   const b = Notifications.addNotificationReceivedListener(handle);
   return () => {
     a.remove();

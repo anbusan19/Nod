@@ -70,7 +70,7 @@ export const api = {
     if (await getDevice(kv, base)) return;
     await saveDevice(kv, base, await request<{ deviceId: string; deviceToken: string }>("POST", "/v1/devices", {}, false));
   },
-  updateDevice: (d: { wallet?: string; fcmToken?: string }) => request<{ ok: true }>("PATCH", "/v1/devices/me", d),
+  updateDevice: (d: { wallet?: string; fcmToken?: string | null }) => request<{ ok: true }>("PATCH", "/v1/devices/me", d),
   createPairing: () => request<{ code: string; expiresAt: number }>("POST", "/v1/pairings"),
   agents: () => request<Agent[]>("GET", "/v1/agents"),
   setFrozen: (id: string, frozen: boolean) => request<{ ok: true }>("POST", `/v1/agents/${id}/freeze`, { frozen }),

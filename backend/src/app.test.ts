@@ -122,6 +122,29 @@ describe("api", () => {
     expect((await json("GET", `/v1/proposals/${p.id}`, dev.deviceToken)).body.status).toBe("rejected");
   });
 
+  it("a phone can turn push off (null clears the token) and back on, without touching its other fields", async () => {
+    const dev = (await json("POST", "/v1/devices", undefined, { fcmToken: "fcm-token-123456", wallet: "W1" })).body;
+    const { code } = (await json("POST", "/v1/pairings", dev.deviceToken)).body;
+    const agent = (await json("POST", "/v1/pairings/redeem", undefined, { code, name: "bot" })).body;
+    const propose = () => json("POST", "/v1/proposals", agent.apiKey, { transaction: transferTx(payer, dest, 1000) });
+
+    await propose();
+    expect(push.sent).toHaveLength(1);
+
+    await json("PATCH", "/v1/devices/me", dev.deviceToken, { fcmToken: null }); // push off
+    await propose();
+    expect(push.sent).toHaveLength(1); // nothing more was sent
+
+    await json("PATCH", "/v1/devices/me", dev.deviceToken, { wallet: "W2" }); // leaving fcmToken out changes nothing
+    await propose();
+    expect(push.sent).toHaveLength(1);
+
+    await json("PATCH", "/v1/devices/me", dev.deviceToken, { fcmToken: "fcm-token-abcdef" }); // push on again
+    await propose();
+    expect(push.sent).toHaveLength(2);
+    expect(push.sent[1].fcmToken).toBe("fcm-token-abcdef");
+  });
+
   it("treats someone else's proposal exactly like a missing one", async () => {
     const a = await setup();
     const b = await setup();

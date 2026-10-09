@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { TextInput } from "react-native";
-import { ScrollView, View } from "react-native";
+import { Linking, ScrollView, Switch, TextInput, View } from "react-native";
 import { getServerUrl } from "../api/client";
 import { inspectServer, parseServerUrl } from "../api/server";
 import { fonts } from "../theme/fonts";
-import { Badge, Button, Card, Mono, T } from "../components/ui";
-import { getAuthMethod } from "../security/biometric";
-import { Linking } from "react-native";
-import { getPushStatus, registerForPush } from "../push/notifications";
+import { Button, Card, Checkbox, Mono, T } from "../components/ui";
+import type { AuthPrefs } from "../security/authPlan";
+import { availableSensors, confirmWithBiometrics, currentPlan, savePrefs } from "../security/biometric";
+import { disablePush, enablePush, getPushStatus } from "../push/notifications";
 import type { PushStatus } from "../push/status";
 import { config } from "../config";
 import { useApp } from "../state";
@@ -24,11 +23,46 @@ export function Settings() {
   const [pref, setPref] = useState<ThemePref>("system");
   const scroller = useRef<ScrollView>(null);
   const [push, setPush] = useState<PushStatus | undefined>();
+  const [plan, setPlan] = useState<Awaited<ReturnType<typeof currentPlan>>>();
+  const [sensors, setSensors] = useState({ fingerprint: true, face: true });
   const refreshPush = () => getPushStatus().then(setPush).catch(() => setPush("off"));
 
   useEffect(() => {
     refreshPush();
   }, [server]);
+
+  useEffect(() => {
+    currentPlan().then(setPlan).catch(() => {});
+    availableSensors().then(setSensors).catch(() => {});
+  }, []);
+
+  const changeMethod = async (key: keyof AuthPrefs, value: boolean) => {
+    if (!plan) return;
+    const next = { ...plan.prefs, [key]: value };
+    if (!next.fingerprint && !next.face && !next.screenLock) {
+      setMsg("Keep at least one way to confirm approvals.");
+      return;
+    }
+    await savePrefs(next);
+    setPlan(await currentPlan());
+  };
+
+  const togglePush = (on: boolean) =>
+    run(async () => {
+      if (on) {
+        const r = await enablePush();
+        await refreshPush();
+        return r.ok ? "Push notifications are on." : `Could not turn push on: ${r.reason}`;
+      }
+      try {
+        await disablePush();
+      } catch (e) {
+        await refreshPush();
+        return `Could not turn push off: ${(e as Error).message}. It is still on.`;
+      }
+      await refreshPush();
+      return "Push notifications are off. Requests from your agents still appear in the app.";
+    });
 
   useEffect(() => {
     getServerUrl().then((u) => { setServer(u); setServerInput(u); }).catch(() => {});
@@ -106,34 +140,66 @@ export function Settings() {
       </Card>
 
       <Card style={{ gap: 10 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <T weight="semibold">Notifications</T>
-          {push === "on" && <Badge label="✓ On" tone="ok" />}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <T weight="semibold">Push notifications</T>
+            <T size={13} muted>
+              {push === "on"
+                ? "On. You'll be alerted on the lock screen when an agent needs your approval."
+                : push === "blocked"
+                  ? "Blocked for Nod in Android. Allow notifications there to turn this on."
+                  : "Off. Turn on to be alerted on the lock screen when an agent needs your approval."}
+            </T>
+          </View>
+          <Switch
+            accessibilityLabel="Push notifications"
+            value={push === "on"}
+            disabled={busy || push === undefined || push === "blocked"}
+            onValueChange={togglePush}
+            trackColor={{ false: c.border, true: c.primary }}
+            thumbColor={push === "on" ? c.onPrimary : c.muted}
+          />
         </View>
-        {push === "on" ? (
-          <T size={13} muted>You'll be alerted on the lock screen when an agent needs your approval.</T>
-        ) : push === "blocked" ? (
-          <>
-            <T size={13} muted>Notifications are blocked for Nod in Android. Allow them to be alerted when an agent needs your approval.</T>
-            <Button title="Open Android settings" kind="secondary" onPress={() => Linking.openSettings()} />
-          </>
-        ) : (
-          <>
-            <T size={13} muted>Needed to be alerted when an agent wants your approval.</T>
-            <Button
-              title="Enable push"
-              kind="secondary"
-              loading={busy}
-              onPress={() =>
-                run(async () => {
-                  const r = await registerForPush();
-                  await refreshPush();
-                  return r.ok ? "Push enabled." : `Push unavailable: ${r.reason}`;
-                })
-              }
-            />
-          </>
+        {push === "blocked" && <Button title="Open Android settings" kind="secondary" onPress={() => Linking.openSettings()} />}
+      </Card>
+
+      <Card style={{ gap: 14 }}>
+        <View style={{ gap: 2 }}>
+          <T weight="semibold">Approval method</T>
+          <T size={13} muted>How Nod confirms it's you before a payment is approved.</T>
+        </View>
+        <Checkbox
+          label="Fingerprint"
+          hint={sensors.fingerprint ? "The strongest option. Used once a fingerprint is set up in Android." : "This phone has no fingerprint sensor."}
+          checked={!!plan?.prefs.fingerprint}
+          disabled={!plan || !sensors.fingerprint}
+          onChange={(v) => changeMethod("fingerprint", v)}
+        />
+        <Checkbox
+          label="Face unlock"
+          hint={sensors.face ? "Quicker, but weaker: a photo or a lookalike can fool some phones." : "This phone has no face unlock."}
+          checked={!!plan?.prefs.face}
+          disabled={!plan || !sensors.face}
+          onChange={(v) => changeMethod("face", v)}
+        />
+        <Checkbox
+          label="Screen lock"
+          hint="PIN, pattern or password, as a backup if the above fail."
+          checked={!!plan?.prefs.screenLock}
+          disabled={!plan}
+          onChange={(v) => changeMethod("screenLock", v)}
+        />
+        {plan && (
+          <View style={{ gap: 4, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 12 }}>
+            <T size={13} muted>Approvals will use</T>
+            <T>{plan.summary}</T>
+            {plan.note ? <T size={13} muted>{plan.note}</T> : null}
+          </View>
         )}
+        <Button title="Try it" kind="secondary" disabled={busy} onPress={() => run(async () => {
+            const r = await confirmWithBiometrics("Test: confirm it's you");
+            return r.ok ? "Confirmed. Approvals will work this way." : `Not confirmed: ${r.reason}`;
+          })} />
       </Card>
 
       <Card style={{ gap: 10 }}>
@@ -161,18 +227,6 @@ export function Settings() {
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <T size={13} muted>Backend</T><Mono style={{ flexShrink: 1, textAlign: "right" }}>{server || config.apiUrl}</Mono>
         </View>
-        <Button
-          title="Check approval method"
-          kind="secondary"
-          onPress={() =>
-            run(async () => {
-              const m = await getAuthMethod();
-              if (m === "biometric") return "Approvals will use your fingerprint or face.";
-              if (m === "screen-lock") return "No biometrics enrolled. Approvals will ask for your screen lock (PIN, pattern or password).";
-              return "No screen lock set. Set one up in Android settings to approve transactions.";
-            })
-          }
-        />
       </Card>
 
     </ScrollView>
