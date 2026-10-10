@@ -112,25 +112,6 @@ h1 {
 .lede { margin: 22px 0 0; max-width: 34em; font-size: clamp(15px, 1.25vw, 18px); color: var(--muted); }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 
-/* announcement pill, centred at the bottom of the hero */
-.hero-pill {
-  position: absolute; z-index: 1; left: 50%; bottom: 32px; transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: 12px; padding: 9px 14px; white-space: nowrap;
-  background: var(--card); border: 1px solid var(--border); border-radius: 6px;
-  font-size: 13px; color: var(--muted); transition: border-color .2s;
-}
-.hero-pill:hover { border-color: var(--accent); }
-.hero-pill b { font-weight: 400; color: var(--text); }
-.hero-pill i { font-style: normal; color: var(--text); }
-
-/* pixel blocks in the bottom-left corner, in the colours of the tiles below */
-.hero-blocks { position: absolute; left: var(--gutter); bottom: 0; display: flex; align-items: flex-end; gap: 0; pointer-events: none; }
-.hero-blocks i { display: block; }
-.hero-blocks .b1 { width: clamp(40px, 4.6vw, 72px); height: clamp(80px, 9vw, 144px); background: linear-gradient(#F7CB7E 50%, #F2B24D 50%); }
-.hero-blocks .b2 { width: clamp(20px, 2.4vw, 36px); height: clamp(20px, 2.4vw, 36px); background: #8BE6C2; margin-left: clamp(24px, 3vw, 48px); animation: hop 2.4s steps(2, jump-none) infinite; }
-.hero-blocks .b3 { width: clamp(22px, 2.4vw, 34px); height: clamp(22px, 2.4vw, 34px); background: #99ACFF; margin: 0 0 clamp(36px, 4vw, 64px) clamp(28px, 3.4vw, 56px); transform: rotate(45deg); }
-@keyframes hop { 50% { transform: translateY(-6px); } }
-
 /* The knot emerges from the bottom-right corner; the hero clips whatever runs past the edge. */
 .hero-art { position: absolute; right: calc(var(--k) * -0.16); bottom: calc(var(--k) * -0.18); width: var(--k); z-index: 0; }
 #knot { width: 100%; aspect-ratio: 1 / 1; display: block; }
@@ -402,8 +383,6 @@ p { color: var(--muted); }
 @media (max-width: 860px) {
   .hero { --k: min(86vw, 460px); padding-bottom: calc(var(--k) * 0.6 + 40px); background-image: none; }
   .hero-copy { margin-left: 0; }
-  .hero-pill { bottom: auto; top: 20px; }
-  .hero-blocks { display: none; }
   .nav-link { display: none; }
 }
 @media (max-width: 560px) {
@@ -419,4 +398,41 @@ p { color: var(--muted); }
   .tl { clip-path: none; animation: none !important; } .sent { opacity: 1; animation: none !important; }
   .phone *, .tile * { transition: none !important; }
   .fp { display: none; }
+}
+
+/* ---------- humans / agents switch ---------- */
+.switch { display: flex; align-items: center; padding: 0 10px; border-left: 1px solid var(--border); }
+.switch button {
+  font: inherit; font-size: 13px; color: var(--muted); background: transparent; border: 1px solid transparent;
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: color .2s, background-color .2s, border-color .2s;
+}
+.switch button:hover { color: var(--text); }
+.switch button[aria-selected="true"] { color: var(--text); background: var(--card); border-color: var(--border); }
+.agents-view { display: none; }
+html[data-view="agents"] .humans-view { display: none; }
+html[data-view="agents"] .agents-view { display: block; }
+html[data-view="agents"] .links { display: none; }
+html[data-view="agents"] .nav .switch { margin-left: auto; }
+
+/* ---------- agents view: a plain document ---------- */
+.agents-view { margin-inline: var(--gutter); border-inline: 1px solid var(--border); min-height: calc(100svh - 56px); }
+.agents-head { padding: clamp(40px, 9vh, 96px) clamp(20px, 3vw, 48px) 40px; border-bottom: 1px solid var(--border); }
+.agents-head h1 { font-size: clamp(30px, 3.6vw, 52px); }
+.doc { max-width: 52rem; padding: 40px clamp(20px, 3vw, 48px) 96px; font-size: 15px; }
+.doc h1, .doc h2, .doc h3 { font-weight: 400; letter-spacing: -0.02em; margin: 2em 0 .6em; }
+.doc h1 { font-size: 28px; margin-top: 0; }
+.doc h2 { font-size: 22px; padding-top: .6em; border-top: 1px solid var(--border); }
+.doc h3 { font-size: 17px; }
+.doc p, .doc li { color: var(--muted); line-height: 1.65; }
+.doc p { margin: 0 0 1em; }
+.doc ul { margin: 0 0 1.2em; padding-left: 1.2em; display: grid; gap: .45em; }
+.doc li::marker { color: var(--accent); }
+.doc code { font-family: var(--mono); font-size: .9em; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: .1em .35em; }
+.doc pre { margin: 0 0 1.4em; padding: 16px 18px; overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--r); }
+.doc pre code { display: block; padding: 0; border: 0; background: transparent; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre; }
+.doc strong { font-weight: 500; color: var(--text); }
+.doc-loading { color: var(--muted); }
+@media (max-width: 1000px) {
+  .switch { margin-left: auto; border-left: 0; }
+  .switch button { padding: 6px 9px; }
 }

@@ -239,4 +239,67 @@
     new ResizeObserver(draw).observe(foot);
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
   }
+
+  // ---------- humans / agents ----------
+  const root = document.documentElement;
+  const switchBtns = $$("#viewSwitch button");
+  let docLoaded = false, mdText = "";
+  const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (t) => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  const renderMd = (md) => {
+    const out = []; let list = false, para = [], code = null;
+    const flushPara = () => { if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; } };
+    const closeList = () => { if (list) { out.push("</ul>"); list = false; } };
+    for (const line of md.split("\n")) {
+      if (line.startsWith("```")) {
+        if (code === null) { flushPara(); closeList(); code = []; }
+        else { out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); code = null; }
+        continue;
+      }
+      if (code !== null) { code.push(line); continue; }
+      const h = /^(#{1,3}) (.*)$/.exec(line);
+      if (h) { flushPara(); closeList(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); continue; }
+      const li = /^- (.*)$/.exec(line);
+      if (li) { flushPara(); if (!list) { out.push("<ul>"); list = true; } out.push(`<li>${inline(li[1])}</li>`); continue; }
+      if (!line.trim()) { flushPara(); closeList(); continue; }
+      para.push(line.trim());
+    }
+    flushPara(); closeList();
+    return out.join("\n");
+  };
+  const loadDoc = async () => {
+    if (docLoaded) return;
+    const target = $("#doc");
+    try {
+      const res = await fetch("agents.md?v=16");
+      if (!res.ok) throw new Error(String(res.status));
+      mdText = await res.text();
+      target.innerHTML = renderMd(mdText);
+      docLoaded = true;
+    } catch {
+      target.innerHTML = '<p>Could not load the instructions here. Open <a href="agents.md">agents.md</a> directly.</p>';
+    }
+  };
+  const setView = (v, push) => {
+    if (v === "agents") root.dataset.view = "agents"; else delete root.dataset.view;
+    switchBtns.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === v)));
+    if (push) {
+      const url = new URL(location.href);
+      if (v === "agents") url.searchParams.set("for", "agents"); else url.searchParams.delete("for");
+      url.hash = "";
+      history.replaceState(null, "", url);
+      scrollTo({ top: 0 });
+    }
+    if (v === "agents") loadDoc();
+  };
+  switchBtns.forEach((b) => b.addEventListener("click", () => setView(b.dataset.view, true)));
+  setView(root.dataset.view === "agents" ? "agents" : "humans", false);
+
+  const copyMd = $("#copyMd");
+  if (copyMd) copyMd.addEventListener("click", async () => {
+    await loadDoc();
+    try { await navigator.clipboard.writeText(mdText); } catch {}
+    const old = copyMd.textContent; copyMd.textContent = "Copied";
+    setTimeout(() => { copyMd.textContent = old; }, 1600);
+  });
 })();
