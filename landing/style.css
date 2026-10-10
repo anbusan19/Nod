@@ -139,12 +139,6 @@ h1 {
 .dither-word canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
 .dither-word.is-ready .dither-text { color: transparent; }
 
-/* Doto: a dot-matrix font. The dots grow in on load and swell back every few seconds. */
-.dither-word.doto .dither-text { font-family: "Doto", var(--mono); font-weight: 900; letter-spacing: 0; line-height: 1;
-  animation: dotoIn 1.4s steps(8, end) both, dotoPulse 9s linear 2.6s infinite; }
-@keyframes dotoIn { from { font-weight: 100; } to { font-weight: 900; } }
-@keyframes dotoPulse { 0%, 80% { font-weight: 900; } 88% { font-weight: 200; } 96%, 100% { font-weight: 900; } }
-
 /* ---------- shared ---------- */
 :root { --r: 6px; --gutter: clamp(16px, 4vw, 72px); }
 h2 {
@@ -422,7 +416,6 @@ p { color: var(--muted); }
   html { scroll-behavior: auto; }
   .pulse::after { animation: none; }
   .js .reveal, .js .code .ln { opacity: 1; transform: none; transition: none; }
-  .dither-word.doto .dither-text { animation: none; }
   .tl { clip-path: none; animation: none !important; } .sent { opacity: 1; animation: none !important; }
   .phone *, .tile * { transition: none !important; }
   .fp { display: none; }

@@ -17,8 +17,7 @@
     return m.map((r) => r.map((v) => (v + 0.5) / 64));
   })();
 
-  // Words set in Doto are real dot-matrix text; they animate with CSS and need no canvas.
-  document.querySelectorAll(".dither-word:not(.doto)").forEach(setup);
+  document.querySelectorAll(".dither-word").forEach(setup);
 
   function setup(host) {
   const textEl = host.querySelector(".dither-text");
