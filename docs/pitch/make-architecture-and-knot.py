@@ -164,14 +164,7 @@ def knot_mask(size, t=None, T3=3):
                 if not bits & bit: continue
                 x, y = cx * 2 + dx, cy * 4 + dy
                 diag = (x / W_ + y / H_) / 2; b = B8[y & 7][x & 7]
-                if t is not None:
-                    intro = t / 2.0 * 1.35
-                    if intro < 2 and intro - diag < b * 0.45: continue
-                    if t >= 2.0:
-                        phase = ((t - 2.0) % 6.0) / 6.0 * 1.8 - 0.4
-                        if phase > -0.3:
-                            band = 1 - min(1, abs(diag - phase) / 0.13)
-                            if band > 0 and b < band * 0.85: continue
+                if t is not None and not gifs.knot_visible(diag, b, t): continue
                 r = cell * 0.42 * S
                 d.ellipse([(x + 0.5) * cell * S - r, (y + 0.5) * cell * S - r, (x + 0.5) * cell * S + r, (y + 0.5) * cell * S + r], fill=255)
     return m.resize((size, size), Image.LANCZOS)
@@ -199,7 +192,7 @@ if __name__ == "__main__":
         rgba(big, (153, 172, 255)).save(f"{OUT}/nod-knot-lavender.png")
         rgba(big, (58, 85, 200)).save(f"{OUT}/nod-knot-blue.png")
         rgba(big, (243, 242, 242)).save(f"{OUT}/nod-knot-white.png")
-        fps, T = 15, 8.0
-        masks = [knot_mask(600, i / fps) for i in range(int(T * fps))]
+        fps, T = 15, gifs.KNOT_LOOP_T
+        masks = [knot_mask(600, i / fps) for i in range(int(round(T * fps)))]
         save_transparent_gif(masks, (153, 172, 255), f"{OUT}/nod-knot-assemble-transparent.gif", fps)
         print("knot done")

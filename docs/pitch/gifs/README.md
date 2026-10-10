@@ -6,7 +6,7 @@ Plus Jakarta Sans and Geist Mono TTFs in a `fonts/` folder).
 
 | File | What it shows |
 |---|---|
-| nod-knot-assemble.gif | The Braille knot assembling through an ordered dither, then a dither sweep |
+| nod-knot-assemble.gif | The Braille knot assembling through an ordered dither, a dither sweep, then dissolving the same way; it ends empty where it starts, so it loops seamlessly |
 | nod-dither-word.gif | "Nod." as dots: assemble, sweep, settle |
 | nod-terminal-propose.gif | The agent's `nod.propose(...)` typing out, then "Sent" |
 | nod-claim-vs-reality.gif | Honest agent versus misleading agent, matches versus blocked |

@@ -69,6 +69,22 @@ src = open("/Users/alphataco/Desktop/Nod/landing/knot.js").read()
 KNOT_ROWS = json.loads(src[src.index("["): src.rindex("]") + 1])
 BITS = [(0, 0, 1), (0, 1, 2), (0, 2, 4), (1, 0, 8), (1, 1, 16), (1, 2, 32), (0, 3, 64), (1, 3, 128)]
 
+
+# Seamless loop for the knot: assemble from the top-left, hold with one dither sweep, then
+# dissolve in the same direction, ending on empty, which is where it starts.
+KNOT_LOOP_T = 8.6
+def knot_visible(diag, b, t):
+    A = lambda s: s / 2.0 * 1.35          # 0 -> 1.45 over 2.15 s
+    if t < 2.15:
+        if A(t) - diag < b * 0.45: return False
+    elif t >= 6.0:
+        if A(t - 6.0) - diag >= b * 0.45: return False
+    if 2.6 <= t < 5.0:
+        phase = -0.3 + 1.7 * ((t - 2.6) / 2.4)
+        band = 1 - min(1, abs(diag - phase) / 0.13)
+        if band > 0 and b < band * 0.85: return False
+    return True
+
 def knot_frames():
     W = len(KNOT_ROWS[0]) * 2; H = len(KNOT_ROWS) * 4
     dots = []
@@ -80,18 +96,13 @@ def knot_frames():
                     x, y = cx * 2 + dx, cy * 4 + dy
                     dots.append((x, y, (x / W + y / H) / 2, B8[y & 7][x & 7]))
     size = 600; cell = size / max(W, H); r = cell * 0.42
-    fps, T = 15, 8.0
+    fps, T = 15, KNOT_LOOP_T
     frames = []
-    for i in range(int(T * fps)):
+    for i in range(int(round(T * fps))):
         t = i / fps
-        intro = t / 2.0 * 1.35
-        phase = ((t - 2.0) % 6.0) / 6.0 * 1.8 - 0.4 if t >= 2.0 else -1
         c = Canvas(size, size)
         for x, y, diag, b in dots:
-            if intro < 2 and intro - diag < b * 0.45: continue
-            if phase > -0.3:
-                band = 1 - min(1, abs(diag - phase) / 0.13)
-                if band > 0 and b < band * 0.85: continue
+            if not knot_visible(diag, b, t): continue
             c.circle((x + 0.5) * cell, (y + 0.5) * cell, r, fill=ACC)
         frames.append(c.out())
     return frames, fps
