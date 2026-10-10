@@ -1,0 +1,7 @@
+# Nod
+
+> Nod is a mobile approval layer for AI agents on Solana: an agent proposes a transaction, a human approves it on their phone, and their own wallet signs it. Nothing moves without your Nod.
+
+## For agents
+
+- [How to use Nod from an agent](/agents.md): pair, propose, wait for the outcome, with the rules an agent must follow
