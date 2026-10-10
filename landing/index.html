@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
   <script>document.documentElement.classList.add("js");</script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <header class="nav" id="nav">
@@ -195,11 +195,27 @@
                   <div class="mock-top"><span class="mock-agent">demo-agent</span><span class="mock-timer">expires in 0:42</span></div>
                   <p class="mock-verb">wants to send</p>
                   <p class="mock-amount">0.05 <span class="unit">SOL</span></p>
-                  <dl class="mock-rows">
-                    <div style="--i:0"><dt>To</dt><dd>7xKX…9fQ2</dd></div>
-                    <div style="--i:1"><dt>Program</dt><dd>System Program</dd></div>
-                    <div style="--i:2"><dt>Your balance</dt><dd>1.2400 → 1.1900 SOL</dd></div>
-                  </dl>
+                  <div class="mid">
+                    <dl class="mock-rows">
+                      <div style="--i:0"><dt>To</dt><dd>7xKX…9fQ2</dd></div>
+                      <div style="--i:1"><dt>Program</dt><dd>System Program</dd></div>
+                      <div style="--i:2"><dt>Your balance</dt><dd>1.2400 → 1.1900 SOL</dd></div>
+                    </dl>
+                    <div class="fp" aria-hidden="true">
+                      <div class="fp-art">
+                        <svg viewBox="0 0 64 76" width="64" height="76" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                          <path pathLength="1" style="--i:0" d="M8 30C8 8 56 8 56 30"/>
+                          <path pathLength="1" style="--i:1" d="M4 44C2 40 4 34 4 30"/>
+                          <path pathLength="1" style="--i:2" d="M13 56C10 46 12 36 12 30C12 16 52 16 52 30C52 40 52 50 54 58"/>
+                          <path pathLength="1" style="--i:3" d="M20 62C17 52 19 42 19 30C19 22 45 22 45 30C45 42 44 52 47 64"/>
+                          <path pathLength="1" style="--i:4" d="M27 66C24 54 26 40 26 30C26 27 38 27 38 30C38 42 38 54 40 68"/>
+                          <path pathLength="1" style="--i:5" d="M32 32V50C32 58 33 64 34 70"/>
+                        </svg>
+                        <i class="scan"></i>
+                      </div>
+                      <p class="fp-cap">Verifying fingerprint</p>
+                    </div>
+                  </div>
                   <div class="mock-actions">
                     <span class="mock-btn">Reject</span>
                     <span class="mock-btn primary hold"><i class="hold-fill"></i><span class="hold-label"><span class="l-hold">Hold to approve</span><span class="l-done">Approved</span></span></span>
@@ -340,6 +356,6 @@
   <script src="knot.js"></script>
   <script src="hero.js"></script>
   <script src="dither-word.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
