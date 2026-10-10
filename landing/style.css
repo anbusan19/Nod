@@ -282,13 +282,14 @@ p { color: var(--muted); }
 .mock-rows { transition: opacity .35s ease; }
 .fp { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .25s ease; color: var(--accent); background: var(--card-2); border: 1px solid var(--border); border-radius: 8px; }
 .phone[data-state="scan"] .fp { opacity: 1; }
-.fp-art { position: relative; width: 56px; height: 68px; }
+.fp-art { position: relative; width: 64px; height: 64px; }
 .fp-art::before { content: ""; position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; border: 1px solid currentColor; opacity: 0; }
 .fp-art svg { position: relative; display: block; }
-.fp path { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.phone[data-state="scan"] .fp path { animation: ridge .8s var(--ease) forwards; animation-delay: calc(var(--i) * .16s + .05s); }
+.fp-base { opacity: .22; }
+.fp-draw path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.phone[data-state="scan"] .fp-draw path { animation: ridge .7s ease-out forwards; animation-delay: calc(var(--i) * .17s + .05s); }
 @keyframes ridge { to { stroke-dashoffset: 0; } }
-.phone[data-state="scan"] .fp-art { animation: fpglow 1s ease-in-out .7s 2; }
+.phone[data-state="scan"] .fp-art { animation: fpglow .9s ease-in-out 1.7s 1; }
 @keyframes fpglow { 50% { filter: drop-shadow(0 0 5px currentColor); } }
 .fp-cap { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); }
 .mock-actions { display: grid; grid-template-columns: 1fr 1.7fr; gap: 8px; margin-top: 14px; }
