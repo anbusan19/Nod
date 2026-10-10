@@ -25,6 +25,8 @@
     </a>
     <nav class="links" aria-label="Primary">
       <a href="#how">How it works</a>
+      <a href="#limits">Limits</a>
+      <a href="#dev">Developers</a>
       <a href="#" data-todo="docs">Docs</a>
       <a href="#" data-todo="github">GitHub</a>
     </nav>
@@ -55,10 +57,170 @@
       </div>
     </section>
 
-    <section id="how" class="next" aria-label="How it works">
-      <p class="eyebrow">Next section</p>
+    <section id="how" class="section">
+      <div class="section-head">
+        <p class="eyebrow">01 · How it works</p>
+        <h2>Four steps between an agent and your <span class="accent dither-word"><span class="dither-text">money.</span></span></h2>
+      </div>
+      <ol class="steps">
+        <li>
+          <span class="step-no">01</span>
+          <h3>The agent proposes</h3>
+          <p>Any script or bot sends Nod a Solana transaction and a one-line reason. It never holds the key that moves the funds.</p>
+        </li>
+        <li>
+          <span class="step-no">02</span>
+          <h3>Your phone decodes it</h3>
+          <p>The app reads the real transaction bytes and simulates them locally, so you see what will happen, not what the agent says will happen.</p>
+        </li>
+        <li>
+          <span class="step-no">03</span>
+          <h3>You give your Nod</h3>
+          <p>Approve with your fingerprint or face, or your screen lock. Reject, or let it expire, and nothing moves.</p>
+        </li>
+        <li>
+          <span class="step-no">04</span>
+          <h3>Your wallet signs</h3>
+          <p>Signing happens in your own wallet through Mobile Wallet Adapter. The key never enters Nod or the backend.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section id="see" class="section split">
+      <div class="section-head">
+        <p class="eyebrow">02 · What you see</p>
+        <h2>Read what it really <span class="accent dither-word"><span class="dither-text">does.</span></span></h2>
+        <p class="lede">
+          Wallet screens show opaque bytes, and people tap approve without knowing what they sign.
+          Nod turns the transaction into plain language before you decide.
+        </p>
+        <ul class="ticks">
+          <li>Decoded from the transaction itself, not from the agent's description</li>
+          <li>Simulated on your phone, with your balance before and after</li>
+          <li>The agent's stated intent is checked against what the transaction does</li>
+          <li>A countdown, and a fresh check if the blockhash or quote goes stale</li>
+        </ul>
+      </div>
+
+      <figure class="card-mock" aria-label="Illustrative approval card">
+        <div class="mock-top">
+          <span class="mock-agent">demo-agent</span>
+          <span class="mock-timer">expires in 0:42</span>
+        </div>
+        <p class="mock-verb">wants to send</p>
+        <p class="mock-amount">0.05 <span>SOL</span></p>
+        <dl class="mock-rows">
+          <div><dt>To</dt><dd>7xKX…9fQ2</dd></div>
+          <div><dt>Program</dt><dd>System Program</dd></div>
+          <div><dt>Your balance</dt><dd>1.2400 → 1.1900 SOL</dd></div>
+          <div><dt>Network fee</dt><dd>~0.000005 SOL</dd></div>
+        </dl>
+        <p class="mock-claim"><span class="dot-ok"></span>Agent said “Weather API credits”. Matches the transaction.</p>
+        <div class="mock-actions">
+          <span class="mock-btn">Reject</span>
+          <span class="mock-btn primary">Hold to approve</span>
+        </div>
+        <figcaption>Illustrative example, not a real transaction.</figcaption>
+      </figure>
+    </section>
+
+    <section id="limits" class="section">
+      <div class="section-head">
+        <p class="eyebrow">03 · Your limits</p>
+        <h2>You decide how much trust an agent <span class="accent dither-word"><span class="dither-text">gets.</span></span></h2>
+        <p class="lede">Limits are set per agent, in the app, and enforced before anything reaches your phone.</p>
+      </div>
+      <div class="tiers">
+        <article>
+          <p class="tier-tag">Auto</p>
+          <h3>Small and expected</h3>
+          <p>Under the amount you set, to recipients you allowed, with known programs only. It goes through without a prompt and shows up in your activity feed.</p>
+        </article>
+        <article>
+          <p class="tier-tag">Nod</p>
+          <h3>Everything else</h3>
+          <p>Larger amounts, new recipients, swaps. Your phone buzzes, shows the decoded card, and waits for your biometric approval.</p>
+        </article>
+        <article>
+          <p class="tier-tag warn">Block</p>
+          <h3>Never, no matter what</h3>
+          <p>Unknown programs, authority changes, or anything over the hard cap is refused automatically, and the agent is told why.</p>
+        </article>
+      </div>
+      <ul class="chips" aria-label="More controls">
+        <li>Daily spend cap</li>
+        <li>Allowed recipients</li>
+        <li>Freeze an agent in one tap</li>
+        <li>Revoke keys any time</li>
+      </ul>
+    </section>
+
+    <section id="mobile" class="section">
+      <div class="section-head">
+        <p class="eyebrow">04 · On your phone</p>
+        <h2>Built for the thumb, not the <span class="accent dither-word"><span class="dither-text">desk.</span></span></h2>
+      </div>
+      <div class="grid3">
+        <article><h3>Biometric approval</h3><p>The Android system prompt, with your screen lock as a fallback. Nod never sees biometric data.</p></article>
+        <article><h3>Push that says almost nothing</h3><p>Notifications carry only a proposal id. The details are fetched and decoded on the device.</p></article>
+        <article><h3>Your wallet, your keys</h3><p>Mobile Wallet Adapter signing with Phantom, Solflare or Seed Vault on a Seeker. Keys stay in the wallet.</p></article>
+        <article><h3>Hold to approve</h3><p>A deliberate press instead of a stray tap, with haptic feedback and a visible countdown.</p></article>
+        <article><h3>Local simulation</h3><p>The phone simulates the exact bytes it is about to sign, so the backend is a messenger, not a source of truth.</p></article>
+        <article><h3>Activity you can filter</h3><p>Every proposal, approved, rejected, blocked or expired, by agent and by status.</p></article>
+      </div>
+    </section>
+
+    <section id="dev" class="section split">
+      <div class="section-head">
+        <p class="eyebrow">05 · For developers</p>
+        <h2>Connect any agent in a few <span class="accent dither-word"><span class="dither-text">lines.</span></span></h2>
+        <p class="lede">
+          Run your own backend with one command, pair your agent with a code from the app, and propose
+          transactions through a small SDK or plain HTTP. Nothing is locked to a hosted service.
+        </p>
+        <ul class="ticks">
+          <li><code>npx nod-server</code> starts a backend with its own data folder and secret</li>
+          <li><code>--tunnel</code> gives it a public https address through your own cloudflared or ngrok</li>
+          <li>Retry-safe proposals, an OpenAPI spec, and a conformance suite for other implementations</li>
+        </ul>
+      </div>
+      <div class="code" role="group" aria-label="SDK example">
+<pre><code><span class="c"># run your backend</span>
+npx nod-server --tunnel
+
+<span class="c">// propose a payment from your agent</span>
+<span class="k">const</span> nod = <span class="k">new</span> Nod({ apiUrl, agentKey });
+<span class="k">const</span> built = <span class="k">await</span> transferSol({ connection, from, to, sol: <span class="n">0.05</span> });
+
+<span class="k">const</span> result = <span class="k">await</span> nod.proposeAndWait({
+  ...built,
+  reason: <span class="s">"Weather API credits"</span>,
+});
+
+<span class="c">// your phone buzzes; once you nod:</span>
+<span class="k">if</span> (isConfirmed(result)) console.log(result.signature);</code></pre>
+      </div>
+    </section>
+
+    <section id="get" class="section get">
+      <p class="eyebrow">Get Nod</p>
+      <h2>Nothing moves without your <span class="accent dither-word"><span class="dither-text">Nod.</span></span></h2>
+      <div class="cta">
+        <a class="btn primary" href="#" data-todo="apk">Download for Android</a>
+        <a class="btn ghost" href="#" data-todo="github">View the source</a>
+      </div>
+      <p class="fineprint">
+        Nod is an open-source prototype running on Solana devnet and has not been audited.
+        Do not point it at funds you cannot afford to lose.
+      </p>
     </section>
   </main>
+
+  <footer class="footer">
+    <span class="brand-name">Nod</span>
+    <span>MIT licensed</span>
+    <span>Built for Clock In: A Solana Mobile Hackathon</span>
+  </footer>
 
   <script src="knot.js"></script>
   <script src="hero.js"></script>

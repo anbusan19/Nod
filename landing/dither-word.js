@@ -2,9 +2,6 @@
 // once the canvas is ready) so it can be selected and read aloud. At rest the letters are solid;
 // on load they assemble through the dither, and a band sweeps through them now and then.
 (() => {
-  const host = document.querySelector(".dither-word");
-  const textEl = host && host.querySelector(".dither-text");
-  if (!host || !textEl) return;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const bayer = (() => {
@@ -20,6 +17,11 @@
     return m.map((r) => r.map((v) => (v + 0.5) / 64));
   })();
 
+  document.querySelectorAll(".dither-word").forEach(setup);
+
+  function setup(host) {
+  const textEl = host.querySelector(".dither-text");
+  if (!textEl) return;
   const canvas = document.createElement("canvas");
   host.appendChild(canvas);
   const ctx = canvas.getContext("2d");
@@ -73,10 +75,11 @@
 
   const INTRO = 1800, PERIOD = 9000;
   let start = performance.now();
+  let started = false; // headings below the fold assemble when they first scroll into view
 
   function draw(now) {
     if (!cover) return;
-    const t = now - start;
+    const t = Math.max(0, now - start);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = accent;
     const intro = reduced ? 2 : t / INTRO * 1.4;
@@ -105,7 +108,9 @@
   const init = () => {
     if (!build()) return;
     start = performance.now();
-    draw(start);
+    started = host.getBoundingClientRect().top < innerHeight;
+    if (!started && !reduced) start = Infinity; // draw nothing until it is seen
+    draw(performance.now());
     kick();
   };
   // Wait for the web font, or the word would be measured and drawn in the fallback face.
@@ -115,7 +120,12 @@
     const w = Math.round(textEl.getBoundingClientRect().width);
     if (w && w !== lastW) { lastW = w; if (cover) { build(); draw(performance.now()); } }
   }).observe(textEl);
-  new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(host);
+  new IntersectionObserver(([e]) => {
+    visible = e.isIntersecting;
+    if (visible && !started && cover) { started = true; start = performance.now(); }
+    kick();
+  }).observe(host);
   document.addEventListener("visibilitychange", kick);
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (cover) { build(); draw(performance.now()); } });
+  }
 })();
