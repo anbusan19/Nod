@@ -1,5 +1,5 @@
 # Nod backend. Build from the repository root:  docker build -t nod-backend .
-# Not yet built or run in CI: treat the first build as part of your own verification.
+# Built and run locally (Colima, arm64): healthy, runs as a non-root user, data persists on the /data volume.
 
 FROM node:24-slim AS build
 WORKDIR /app
