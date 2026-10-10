@@ -31,10 +31,15 @@
 
   function build() {
     const cs = getComputedStyle(textEl);
-    const rect = textEl.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+    const rect = textEl.getBoundingClientRect(); // the text's own box (font ascent to descent)
     const w = Math.ceil(rect.width), h = Math.ceil(rect.height);
     if (!w || !h) return false;
     accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || accent;
+
+    // The canvas must sit exactly on the text box, which is not the same as the host's line box.
+    canvas.style.left = `${rect.left - hostRect.left}px`;
+    canvas.style.top = `${rect.top - hostRect.top}px`;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.style.width = w + "px";
@@ -43,20 +48,20 @@
     canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Rasterise the word once, then measure how much of each dot cell it covers.
+    // Rasterise the word at 6x6 samples per dot cell and keep how much of each cell is inked.
     const fs = parseFloat(cs.fontSize);
-    cell = Math.max(3, fs / 22);
+    cell = Math.max(2, fs / 30);
     cols = Math.ceil(w / cell);
     rows = Math.ceil(h / cell);
+    const S = 6;
     const off = document.createElement("canvas");
-    off.width = cols * 4; off.height = rows * 4; // 4x4 samples per cell
+    off.width = cols * S; off.height = rows * S;
     const o = off.getContext("2d", { willReadFrequently: true });
-    const sx = off.width / (cols * cell), sy = off.height / (rows * cell);
-    o.scale(sx, sy);
+    const k = S / cell;
+    o.scale(k, k);
     o.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     o.letterSpacing = cs.letterSpacing;
     o.textBaseline = "alphabetic";
-    // Same baseline the DOM uses: the line box centres the font's ascent and descent.
     const m = o.measureText(textEl.textContent);
     const asc = m.fontBoundingBoxAscent ?? fs * 0.8, desc = m.fontBoundingBoxDescent ?? fs * 0.2;
     o.fillStyle = "#fff";
@@ -66,34 +71,40 @@
     cover = new Float32Array(cols * rows);
     for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
       let sum = 0;
-      for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) sum += data[((cy * 4 + j) * off.width + cx * 4 + i) * 4 + 3];
-      cover[cy * cols + cx] = sum / (16 * 255);
+      for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) sum += data[((cy * S + j) * off.width + cx * S + i) * 4 + 3];
+      cover[cy * cols + cx] = sum / (S * S * 255);
     }
-    host.classList.add("is-ready");
     return true;
   }
 
-  const INTRO = 1800, PERIOD = 9000;
+  const INTRO = 1800, PERIOD = 9000, SWEEP = 2400;
   let start = performance.now();
   let started = false; // headings below the fold assemble when they first scroll into view
 
+  // The crisp real text is what people read. The dots only take over while something is moving:
+  // the assemble on first view, and a short dither sweep every few seconds.
   function draw(now) {
     if (!cover) return;
     const t = Math.max(0, now - start);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = accent;
+    const local = (t - INTRO) % PERIOD;
     const intro = reduced ? 2 : t / INTRO * 1.4;
-    const phase = reduced ? -1 : ((t - INTRO) % PERIOD) / PERIOD * 1.8 - 0.4;
-    const r = cell * 0.46;
+    const sweeping = !reduced && t > INTRO && local < SWEEP;
+    const animating = !reduced && (intro < 2 || sweeping);
+    host.classList.toggle("is-ready", animating);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!animating) return;
+
+    ctx.fillStyle = accent;
+    const phase = sweeping ? -0.25 + 1.5 * (local / SWEEP) : -1;
+    const r = cell * 0.52;
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       let c = cover[y * cols + x];
       if (c <= 0.02) continue;
       const b = bayer[y & 7][x & 7];
       const diag = x / cols;
-      // Letters are solid where they are mostly inked; edges dither.
-      c = smooth(0.04, 0.4, c);
+      c = Math.min(1, c * 1.12);
       if (intro < 2) c *= smooth(0, 0.5, intro - diag);
-      if (phase > -0.3) c *= 1 - Math.max(0, 1 - Math.abs(diag - phase) / 0.22) * 0.9;
+      if (sweeping) c *= 1 - Math.max(0, 1 - Math.abs(diag - phase) / 0.22) * 0.9;
       if (c <= b) continue;
       ctx.beginPath();
       ctx.arc((x + 0.5) * cell, (y + 0.5) * cell, r, 0, 6.2832);
