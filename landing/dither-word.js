@@ -27,7 +27,7 @@
   host.appendChild(canvas);
   const ctx = canvas.getContext("2d");
 
-  let cols = 0, rows = 0, cell = 0, cover = null, accent = "#99ACFF";
+  let cols = 0, rows = 0, cell = 0, cover = null, on = null, accent = "#99ACFF";
   const smooth = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
 
   function build() {
@@ -51,7 +51,7 @@
 
     // Rasterise the word at 6x6 samples per dot cell and keep how much of each cell is inked.
     const fs = parseFloat(cs.fontSize);
-    cell = Math.max(2, fs / 20);
+    cell = parseFloat(host.dataset.cell) || Math.max(2, fs / 20);
     cols = Math.ceil(w / cell);
     rows = Math.ceil(h / cell);
     const S = 6;
@@ -74,6 +74,22 @@
       let sum = 0;
       for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) sum += data[((cy * S + j) * off.width + cx * S + i) * 4 + 3];
       cover[cy * cols + cx] = sum / (S * S * 255);
+    }
+    // Which cells are dots. A cell is a dot when the letter covers most of it; then any stroke that
+    // is only one dot thick (the stem of an i or l, its tittle, a full stop) is widened to two.
+    on = new Uint8Array(cols * rows);
+    for (let n = 0; n < on.length; n++) on[n] = cover[n] >= 0.42 ? 1 : 0;
+    const base = on.slice();
+    const at = (x, y) => (x >= 0 && y >= 0 && x < cols && y < rows ? base[y * cols + x] : 0);
+    const cv = (x, y) => (x >= 0 && y >= 0 && x < cols && y < rows ? cover[y * cols + x] : -1);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      if (!at(x, y)) continue;
+      if (!at(x - 1, y) && !at(x + 1, y)) {
+        if (cv(x + 1, y) >= cv(x - 1, y) && cv(x + 1, y) >= 0) on[y * cols + x + 1] = 1; else if (cv(x - 1, y) >= 0) on[y * cols + x - 1] = 1;
+      }
+      if (!at(x, y - 1) && !at(x, y + 1)) {
+        if (cv(x, y + 1) >= cv(x, y - 1) && cv(x, y + 1) >= 0) on[(y + 1) * cols + x] = 1; else if (cv(x, y - 1) >= 0) on[(y - 1) * cols + x] = 1;
+      }
     }
     host.classList.add("is-ready");
     return true;
@@ -98,7 +114,7 @@
     ctx.fillStyle = accent;
     const r = cell * 0.5;
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      if (cover[y * cols + x] < 0.42) continue;
+      if (!on[y * cols + x]) continue;
       const b = bayer[y & 7][x & 7];
       const diag = x / cols;
       let f = 1;
