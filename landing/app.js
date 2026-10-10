@@ -122,7 +122,7 @@
   // ---------- phone loop: decode -> hold -> signed ----------
   const phone = $("#phone");
   if (phone) {
-    const states = [["decode", 2600], ["hold", 2800], ["signed", 2800]];
+    const states = [["decode", 2400], ["hold", 1900], ["scan", 2900], ["signed", 2800]];
     let i = 0, timer = 0, visible = false;
     const run = () => {
       clearTimeout(timer);
