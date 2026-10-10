@@ -72,6 +72,8 @@ def along(pts, f):
         acc += seg; out.append(pts[i + 1])
     return out
 
+SHOW_TITLE = True  # the transparent export leaves the heading to the slide it is placed on
+SHOW_DOT = True  # the moving dot leaves a trail on a transparent GIF, so that export turns it off
 def arrow(c, pts, f, col, width=2.5, head=True, dot=False):
     if f <= 0: return
     seg = along(pts, min(1.0, f))
@@ -81,14 +83,15 @@ def arrow(c, pts, f, col, width=2.5, head=True, dot=False):
         a = math.atan2(y2 - y1, x2 - x1); s = 9
         c.d.polygon([(x2 * SS, y2 * SS), ((x2 - s * math.cos(a - 0.45)) * SS, (y2 - s * math.sin(a - 0.45)) * SS),
                      ((x2 - s * math.cos(a + 0.45)) * SS, (y2 - s * math.sin(a + 0.45)) * SS)], fill=col)
-    if dot and 0 < f < 0.999:
+    if dot and SHOW_DOT and 0 < f < 0.999:
         x, y = seg[-1]; c.circle(x, y, 7, fill=col)
 
 def frame(step, f):
     """step: index being played (or 7 = all done), f: progress inside the step."""
     c = Canvas(W, H)
-    c.text(50, 50, "ARCHITECTURE", font("geist-400", 13), MUTED)
-    c.text(50, 78, "How one proposal travels from an agent to the chain", font("jakarta-500", 30), TEXT)
+    if SHOW_TITLE:
+        c.text(50, 50, "ARCHITECTURE", font("geist-400", 13), MUTED)
+        c.text(50, 78, "How one proposal travels from an agent to the chain", font("jakarta-500", 30), TEXT)
     for key, x, y, w, h, title, sub in CONT:
         c.rr(x, y, w, h, 14, fill=CARD, outline=BORDER)
         c.text(x + 20, y + 20, title, font("geist-500", 13), MUTED)

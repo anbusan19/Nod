@@ -25,3 +25,11 @@ Plus Jakarta Sans and Geist Mono TTFs in a `fonts/` folder).
 
 GIF transparency is on or off per pixel, so the animated knots have slightly harder dot edges than the PNGs.
 Use the PNGs when you only need the still knot.
+
+## Transparent versions
+
+Every animation also exists as `<name>-transparent.gif`: the page background is removed, and the cards, buttons
+and text keep their own fills. They are designed for the dark cards, so on a light slide you get dark cards on
+light. The architecture version leaves out the heading and the moving dot (a moving dot would leave a trail on a
+transparent GIF), so put your own slide title above it.
+Regenerate with `docs/pitch/make-transparent-gifs.py`.

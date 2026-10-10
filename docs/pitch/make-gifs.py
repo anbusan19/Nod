@@ -23,9 +23,11 @@ def font(name, size):
     if k not in _fc: _fc[k] = ImageFont.truetype(f"fonts/{name}.ttf", int(round(size * SS)))
     return _fc[k]
 
+BG_OVERRIDE = None  # set by the transparent exporter to render the page background in a chosen colour
 class Canvas:
-    def __init__(s, w, h, bg=BG):
+    def __init__(s, w, h, bg=None):
         s.w, s.h = w, h
+        if bg is None: bg = BG_OVERRIDE if BG_OVERRIDE is not None else BG
         s.im = Image.new("RGB", (w * SS, h * SS), bg); s.d = ImageDraw.Draw(s.im)
     def rr(s, x, y, w, h, r=8, fill=None, outline=None, width=1):
         s.d.rounded_rectangle([x * SS, y * SS, (x + w) * SS - 1, (y + h) * SS - 1], radius=r * SS, fill=fill, outline=outline, width=max(1, int(width * SS)))
