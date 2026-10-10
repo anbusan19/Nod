@@ -365,7 +365,11 @@ p { color: var(--muted); }
 .foot-cols a:hover { color: var(--accent); }
 .foot-cols span { color: var(--muted); font-size: 13px; }
 
-.band-foot { position: relative; margin-top: 56px; overflow: hidden; }
+.band-foot { position: relative; margin-top: 0; padding-top: 56px; overflow: hidden;
+  /* carry the frame's vertical rules down to the stripes */
+  background-image: linear-gradient(var(--border), var(--border)), linear-gradient(var(--border), var(--border));
+  background-size: 1px 100%; background-repeat: no-repeat;
+  background-position: left var(--gutter) top 0, right var(--gutter) top 0; }
 #footKnot { display: block; width: min(360px, 60vw); aspect-ratio: 1 / 1; margin: 0 auto -124px; position: relative; z-index: 1; }
 .stripes { position: relative; z-index: 2; display: grid; height: 190px; }
 .stripes i { display: block; }
@@ -508,4 +512,4 @@ html[data-view="agents"] .nav .switch { margin-left: auto; }
 
 /* header: logo only; hero title in bold */
 .nav .brand-name { display: none; }
-.hero h1 { font-weight: 700; }
+.hero h1 { font-weight: 600; }
