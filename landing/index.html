@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
   <script>document.documentElement.classList.add("js");</script>
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
   <header class="nav" id="nav">
@@ -38,7 +38,6 @@
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
-        <p class="badge"><span class="pulse"></span>Live on Solana devnet</p>
         <h1>Nothing moves without your <span class="accent dither-word"><span class="dither-text">Nod.</span></span></h1>
         <p class="lede">
           The approval layer for AI agents. Your agent proposes a transaction, your phone decodes and
@@ -48,12 +47,12 @@
           <a class="btn primary" href="#" data-todo="apk">Download for Android</a>
           <a class="btn ghost" href="#how">Watch it work</a>
         </div>
-        <ol class="flow" aria-label="The flow in three steps">
-          <li><span>01</span> agent proposes</li>
-          <li><span>02</span> phone decodes</li>
-          <li><span>03</span> you nod</li>
-        </ol>
       </div>
+
+      <a class="hero-pill" href="#how"><span class="pulse"></span><b>Live on Solana devnet</b><span>See how it works</span><i>→</i></a>
+
+      <div class="hero-blocks" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+
       <div class="hero-art">
         <canvas id="knot" role="img" aria-label="The Nod knot, drawn in Braille dots that dissolve and reassemble"></canvas>
       </div>
@@ -353,6 +352,6 @@
   <script src="knot.js"></script>
   <script src="hero.js"></script>
   <script src="dither-word.js"></script>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
