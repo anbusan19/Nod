@@ -9,10 +9,14 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { homedir, networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { renderBanner, supportsColor } from "./banner.js";
+import { findProvider, INSTALL_HINT, startTunnel } from "./tunnel.js";
 
 const HELP = `nod-server: the Nod backend
 
-  npx nod-server [--port 3000] [--data ~/.nod] [--cluster devnet|mainnet-beta]
+  npx nod-server [--port 3000] [--data ~/.nod] [--cluster devnet|mainnet-beta] [--tunnel]
+
+--tunnel exposes the server on a public https URL through cloudflared (or ngrok) if installed, so
+release builds of the app can reach it. The free URL changes every run.
 
 Your phone's Nod app and your agents (nod-sdk) both connect to this server. It never holds your keys.
 Data and a generated secret live in the data folder; back it up, and never share secrets.json.
@@ -95,3 +99,21 @@ const version = (() => {
 console.log(renderBanner({ version, cluster, port, dataDir, pushOn, lan }, { color: supportsColor(), columns: process.stdout.columns }));
 
 await import("./index.js");
+
+if (process.argv.includes("--tunnel")) {
+  const provider = await findProvider();
+  if (!provider) {
+    console.log(`\n${INSTALL_HINT}\n`);
+  } else {
+    console.log(`\nStarting a ${provider} tunnel...`);
+    const tunnel = startTunnel(provider, port);
+    for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { tunnel.stop(); process.exit(0); });
+    process.on("exit", () => tunnel.stop());
+    try {
+      const url = await tunnel.url;
+      console.log(`\nPublic https URL: ${url}\nIn the Nod app: Settings > Servers > add this URL. It changes the next time you start with --tunnel.\nAnyone with this URL can reach your server, though every request still needs a valid key or device token.\n`);
+    } catch (e) {
+      console.log(`\nCould not start the tunnel: ${(e as Error).message}\nThe server is still running locally.\n`);
+    }
+  }
+}

@@ -78,7 +78,7 @@ The app has no built-in server. On first launch it asks for yours, and you can c
 | Where it runs | How to get HTTPS |
 |---|---|
 | A VPS or cloud container | Caddy or the platform's own TLS (see above) |
-| A laptop or home server | A tunnel, such as `cloudflared tunnel --url http://localhost:3000`, which prints a public `https://…` address (example only, not tested here), or Tailscale Funnel |
+| A laptop or home server | `npx nod-server --tunnel` (needs `cloudflared` or `ngrok` installed; it prints a public `https://…` address, which changes every run), or Tailscale Funnel |
 | Developing with a USB cable | Debug builds also accept `http://`. Run `adb reverse tcp:3000 tcp:3000` and enter `http://localhost:3000` |
 
 Enter the address in the app. It checks `/health` before switching and refuses anything that does not answer like a Nod backend.

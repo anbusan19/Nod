@@ -80,7 +80,7 @@ export function renderBanner(info: BannerInfo, opts: { color: boolean; columns?:
     paint(DIM, "Nod app, same Wi-Fi (debug builds)"),
     ...urls.map((u) => `  ${paint(LAVENDER, u)}`),
     paint(DIM, "Release builds need https:"),
-    paint(DIM, "use a tunnel (docs/DEPLOY.md)"),
+    paint(DIM, "run with --tunnel (docs/DEPLOY.md)"),
   ];
 
   const lines: string[] = [];
