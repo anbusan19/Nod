@@ -37,10 +37,11 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 
-.nav, .hero, .next { width: min(1200px, 100% - 32px); margin-inline: auto; }
+/* Full width with a side gutter: the content starts at the left edge and the knot sits at the right. */
+.nav, .hero, .next { width: 100%; padding-inline: clamp(16px, 4vw, 72px); }
 .nav {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 0;
+  padding-block: 20px;
 }
 .brand { display: inline-flex; align-items: center; gap: 12px; }
 .mark {
@@ -49,17 +50,17 @@ a { color: inherit; text-decoration: none; }
 /* The light logo has a white background; multiply makes it vanish into the page like in the app. */
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .mark { mix-blend-mode: multiply; } }
 .mark img { width: 100%; height: 100%; display: block; }
-.brand-name { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+.brand-name { font-weight: 400; font-size: 20px; letter-spacing: -0.01em; }
 .links { display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
 .links a:hover { color: var(--text); }
 
 .hero {
   min-height: calc(100svh - 84px);
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: clamp(24px, 5vw, 72px);
-  padding: 24px 0 64px;
+  padding-block: 24px 64px;
 }
 .eyebrow {
   margin: 0 0 20px;
@@ -71,8 +72,8 @@ a { color: inherit; text-decoration: none; }
 }
 h1 {
   margin: 0;
-  font-weight: 700;
-  font-size: clamp(40px, 6.2vw, 80px);
+  font-weight: 400;
+  font-size: clamp(40px, 6.6vw, 112px);
   line-height: 1.02;
   letter-spacing: -0.035em;
   text-wrap: balance;
@@ -80,7 +81,7 @@ h1 {
 .accent { color: var(--accent); }
 .lede {
   margin: 24px 0 0;
-  max-width: 34em;
+  max-width: 36em;
   font-size: clamp(16px, 1.5vw, 19px);
   color: var(--muted);
 }
@@ -89,7 +90,7 @@ h1 {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 48px; padding: 0 22px;
   border-radius: 14px;
-  font-weight: 600; font-size: 15px;
+  font-weight: 500; font-size: 15px;
   border: 1px solid transparent;
   transition: transform .15s ease, border-color .15s ease, background-color .15s ease;
 }
@@ -107,18 +108,18 @@ h1 {
 }
 .flow span { color: var(--accent); margin-right: 6px; }
 
-.hero-art { display: grid; place-items: center; }
+.hero-art { display: grid; place-items: center end; }
 #knot {
-  width: min(100%, 560px);
+  width: min(100%, 760px, calc(100svh - 150px));
   aspect-ratio: 1 / 1;
   display: block;
 }
 
-.next { padding: 80px 0; }
+.next { padding-block: 80px; }
 
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 8px; }
-  .hero-art { order: -1; }
+  .hero-art { order: -1; place-items: center; }
   #knot { width: min(78%, 360px); }
   .links a:not(:last-child) { display: none; }
 }
