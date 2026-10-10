@@ -41,7 +41,9 @@
     colors = { accent: s.getPropertyValue("--accent").trim() };
   };
   readColors();
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); draw(performance.now()); });
+  const recolor = () => { readColors(); draw(performance.now()); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", recolor);
+  window.addEventListener("nod-theme", recolor);
 
   let size = { w: 0, h: 0, cell: 0, ox: 0, oy: 0 };
   const resize = () => {

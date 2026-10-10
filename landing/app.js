@@ -238,6 +238,7 @@
     draw();
     new ResizeObserver(draw).observe(foot);
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+    window.addEventListener("nod-theme", draw);
   }
 
   // ---------- humans / agents ----------

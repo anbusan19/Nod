@@ -153,6 +153,8 @@
     kick();
   }).observe(host);
   document.addEventListener("visibilitychange", kick);
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (cover) { build(); draw(performance.now()); } });
+  const rebuild = () => { if (cover) { build(); draw(performance.now()); } };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rebuild);
+  window.addEventListener("nod-theme", rebuild);
   }
 })();
