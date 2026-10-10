@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nod: nothing moves without your Nod</title>
+  <meta name="description" content="Nod is a mobile approval layer for AI agents on Solana. Your agent proposes a transaction, your phone decodes it, and you approve with your fingerprint or face.">
+  <meta name="theme-color" content="#070606">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="Nod home">
+      <span class="mark">
+        <picture>
+          <source srcset="assets/icon-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="assets/icon-light.png" alt="" width="32" height="32">
+        </picture>
+      </span>
+      <span class="brand-name">Nod</span>
+    </a>
+    <nav class="links" aria-label="Primary">
+      <a href="#how">How it works</a>
+      <a href="#" data-todo="docs">Docs</a>
+      <a href="#" data-todo="github">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Approval layer for AI agents · Solana</p>
+        <h1>Nothing moves without your <span class="accent">Nod.</span></h1>
+        <p class="lede">
+          Your agent proposes a transaction. Your phone decodes it, simulates it, and shows you what it
+          really does. You approve with your fingerprint or face, and only then does your wallet sign.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="#" data-todo="apk">Download for Android</a>
+          <a class="btn ghost" href="#how">See how it works</a>
+        </div>
+        <ol class="flow" aria-label="The flow in three steps">
+          <li><span>01</span> agent proposes</li>
+          <li><span>02</span> phone decodes</li>
+          <li><span>03</span> you nod</li>
+        </ol>
+      </div>
+
+      <div class="hero-art">
+        <canvas id="knot" role="img" aria-label="The Nod knot, drawn in Braille dots that dissolve and reassemble"></canvas>
+      </div>
+    </section>
+
+    <section id="how" class="next" aria-label="How it works">
+      <p class="eyebrow">Next section</p>
+    </section>
+  </main>
+
+  <script src="knot.js"></script>
+  <script src="hero.js"></script>
+</body>
+</html>

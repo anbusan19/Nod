@@ -1,0 +1,126 @@
+/* Same type and colours as the app: Plus Jakarta Sans for text, Geist Mono for the small print,
+   the logo's #070606 and #99ACFF (app/src/theme). */
+:root {
+  --bg: #F6F7F9;
+  --card: #FFFFFF;
+  --text: #0B0D12;
+  --muted: #5B6472;
+  --border: #E3E6EB;
+  --primary: #99ACFF;
+  --on-primary: #070606;
+  --accent: #3A55C8;
+  --ghost: rgba(11, 13, 18, 0.10);
+  --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #070606; --card: #131212; --text: #F3F2F2; --muted: #9C9A9A; --border: #292727;
+    --accent: #99ACFF; --ghost: rgba(243, 242, 242, 0.09);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #070606; --card: #131212; --text: #F3F2F2; --muted: #9C9A9A; --border: #292727;
+  --accent: #99ACFF; --ghost: rgba(243, 242, 242, 0.09);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+
+.nav, .hero, .next { width: min(1200px, 100% - 32px); margin-inline: auto; }
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0;
+}
+.brand { display: inline-flex; align-items: center; gap: 12px; }
+.mark {
+  width: 32px; height: 32px; border-radius: 9px; overflow: hidden; display: block;
+}
+/* The light logo has a white background; multiply makes it vanish into the page like in the app. */
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .mark { mix-blend-mode: multiply; } }
+.mark img { width: 100%; height: 100%; display: block; }
+.brand-name { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+.links { display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
+.links a:hover { color: var(--text); }
+
+.hero {
+  min-height: calc(100svh - 84px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 72px);
+  padding: 24px 0 64px;
+}
+.eyebrow {
+  margin: 0 0 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(40px, 6.2vw, 80px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.accent { color: var(--accent); }
+.lede {
+  margin: 24px 0 0;
+  max-width: 34em;
+  font-size: clamp(16px, 1.5vw, 19px);
+  color: var(--muted);
+}
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 22px;
+  border-radius: 14px;
+  font-weight: 600; font-size: 15px;
+  border: 1px solid transparent;
+  transition: transform .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--primary); color: var(--on-primary); }
+.btn.primary:hover { background: #AEBDFF; }
+.btn.ghost { border-color: var(--border); color: var(--text); background: var(--card); }
+.btn.ghost:hover { border-color: var(--accent); }
+.btn:focus-visible, .links a:focus-visible, .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.flow {
+  list-style: none; margin: 44px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 8px 28px;
+  font-family: var(--mono); font-size: 13px; color: var(--muted);
+}
+.flow span { color: var(--accent); margin-right: 6px; }
+
+.hero-art { display: grid; place-items: center; }
+#knot {
+  width: min(100%, 560px);
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.next { padding: 80px 0; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 8px; }
+  .hero-art { order: -1; }
+  #knot { width: min(78%, 360px); }
+  .links a:not(:last-child) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
