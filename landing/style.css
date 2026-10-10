@@ -280,7 +280,7 @@ p { color: var(--muted); }
 /* fingerprint: appears over the rows only while "Hold to approve" is being pressed */
 .mid { position: static; } /* so .fp covers the whole card, like .signed */
 .mock-rows { transition: opacity .35s ease; }
-.fp { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .25s ease; color: var(--accent); background: var(--card); }
+.fp { position: absolute; z-index: 2; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .25s ease; color: var(--accent); background: var(--card); }
 .phone[data-state="scan"] .fp { opacity: 1; }
 .fp-art { position: relative; width: 84px; height: 84px; }
 .fp-art::before { content: ""; position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; border: 1px solid currentColor; opacity: 0; }
@@ -303,7 +303,7 @@ p { color: var(--muted); }
 .l-ver, .l-done { opacity: 0; }
 .phone[data-state="scan"] .l-hold, .phone[data-state="signed"] .l-hold { opacity: 0; }
 .phone[data-state="scan"] .l-ver, .phone[data-state="signed"] .l-done { opacity: 1; }
-.signed { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 4px; text-align: center; background: var(--card); opacity: 0; transform: scale(.97); pointer-events: none; transition: opacity .45s var(--ease), transform .45s var(--ease); }
+.signed { position: absolute; z-index: 3; inset: 0; display: grid; place-content: center; justify-items: center; gap: 4px; text-align: center; background: var(--card); opacity: 0; transform: scale(.97); pointer-events: none; transition: opacity .45s var(--ease), transform .45s var(--ease); }
 .phone[data-state="signed"] .signed { opacity: 1; transform: none; transition-delay: .5s; }
 .check { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--ok); position: relative; margin-bottom: 12px; }
 .check::after { content: ""; position: absolute; left: 15px; top: 9px; width: 10px; height: 19px; border: solid var(--ok); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) scale(0); transition: transform .35s var(--ease) .9s; }
