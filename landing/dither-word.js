@@ -1,6 +1,7 @@
-// "Nod." in the headline, redrawn as ordered-dither dots. The real text stays in the page (hidden
-// once the canvas is ready) so it can be selected and read aloud. At rest the letters are solid;
-// on load they assemble through the dither, and a band sweeps through them now and then.
+// A word redrawn as a grid of dots. The real text stays in the page (transparent once the canvas is
+// ready) so it can be selected and read aloud. At rest the dots form a clean dot-matrix word; on
+// first view they assemble through an ordered dither, and a band sweeps through now and then.
+// Add data-static to a word to skip all motion.
 (() => {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -50,7 +51,7 @@
 
     // Rasterise the word at 6x6 samples per dot cell and keep how much of each cell is inked.
     const fs = parseFloat(cs.fontSize);
-    cell = Math.max(2, fs / 30);
+    cell = Math.max(2, fs / 20);
     cols = Math.ceil(w / cell);
     rows = Math.ceil(h / cell);
     const S = 6;
@@ -74,38 +75,36 @@
       for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) sum += data[((cy * S + j) * off.width + cx * S + i) * 4 + 3];
       cover[cy * cols + cx] = sum / (S * S * 255);
     }
+    host.classList.add("is-ready");
     return true;
   }
 
   const INTRO = 1800, PERIOD = 9000, SWEEP = 2400;
+  const still = host.hasAttribute("data-static");
   let start = performance.now();
   let started = false; // headings below the fold assemble when they first scroll into view
 
-  // The crisp real text is what people read. The dots only take over while something is moving:
-  // the assemble on first view, and a short dither sweep every few seconds.
+  // The word is always dots. At rest a cell is a dot when the letter covers most of it, which keeps
+  // the letterforms crisp. While moving, the same dots drop out and return through a Bayer matrix.
   function draw(now) {
     if (!cover) return;
     const t = Math.max(0, now - start);
     const local = (t - INTRO) % PERIOD;
-    const intro = reduced ? 2 : t / INTRO * 1.4;
-    const sweeping = !reduced && t > INTRO && local < SWEEP;
-    const animating = !reduced && (intro < 2 || sweeping);
-    host.classList.toggle("is-ready", animating);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!animating) return;
-
-    ctx.fillStyle = accent;
+    const intro = reduced || still ? 2 : t / INTRO * 1.4;
+    const sweeping = !reduced && !still && t > INTRO && local < SWEEP;
     const phase = sweeping ? -0.25 + 1.5 * (local / SWEEP) : -1;
-    const r = cell * 0.52;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = accent;
+    const r = cell * 0.5;
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      let c = cover[y * cols + x];
-      if (c <= 0.02) continue;
+      if (cover[y * cols + x] < 0.42) continue;
       const b = bayer[y & 7][x & 7];
       const diag = x / cols;
-      c = Math.min(1, c * 1.12);
-      if (intro < 2) c *= smooth(0, 0.5, intro - diag);
-      if (sweeping) c *= 1 - Math.max(0, 1 - Math.abs(diag - phase) / 0.22) * 0.9;
-      if (c <= b) continue;
+      let f = 1;
+      if (intro < 2) f *= smooth(0, 0.5, intro - diag);
+      if (sweeping) f *= 1 - Math.max(0, 1 - Math.abs(diag - phase) / 0.22) * 0.9;
+      if (f <= b && f < 1) continue;
       ctx.beginPath();
       ctx.arc((x + 0.5) * cell, (y + 0.5) * cell, r, 0, 6.2832);
       ctx.fill();
@@ -114,11 +113,12 @@
 
   let raf = 0, visible = true;
   const loop = (now) => { draw(now); raf = visible && !document.hidden ? requestAnimationFrame(loop) : 0; };
-  const kick = () => { if (!raf && !reduced && cover) raf = requestAnimationFrame(loop); };
+  const kick = () => { if (!raf && !reduced && !still && cover) raf = requestAnimationFrame(loop); };
 
   const init = () => {
     if (!build()) return;
     start = performance.now();
+    if (still) { draw(start); return; }
     started = host.getBoundingClientRect().top < innerHeight;
     if (!started && !reduced) start = Infinity; // draw nothing until it is seen
     draw(performance.now());

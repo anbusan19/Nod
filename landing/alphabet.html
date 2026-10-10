@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nod dither alphabet</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=19">
+  <style>
+    body { padding: 0; }
+    .page { margin-inline: var(--gutter); border-inline: 1px solid var(--border); min-height: 100svh; }
+    .top { display: flex; justify-content: space-between; align-items: baseline; padding: 28px clamp(20px,3vw,48px); border-bottom: 1px solid var(--border); }
+    .top a { font-size: 14px; color: var(--muted); }
+    .top a:hover { color: var(--text); }
+    .intro { padding: 40px clamp(20px,3vw,48px) 32px; border-bottom: 1px solid var(--border); }
+    .intro h1 { font-size: clamp(28px, 3.4vw, 48px); }
+    .group { border-bottom: 1px solid var(--border); }
+    .group > h2 { font-size: 13px; font-family: var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 18px clamp(20px,3vw,48px); border-bottom: 1px solid var(--border); margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+    .cell { display: grid; justify-items: center; gap: 14px; padding: 26px 8px 14px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .cell .dither-word { font-size: 72px; line-height: 1; font-weight: 400; }
+    .lab { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .words { display: grid; gap: 0; }
+    .wrow { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 24px; padding: 22px clamp(20px,3vw,48px); border-bottom: 1px solid var(--border); }
+    .wrow:last-child { border-bottom: 0; }
+    .wrow .lab { align-self: start; padding-top: 6px; }
+    .samples { display: flex; flex-wrap: wrap; align-items: baseline; gap: 20px 40px; }
+    .samples .dither-word { font-weight: 400; line-height: 1.1; }
+    .s1 .dither-word { font-size: 24px; } .s2 .dither-word { font-size: 37px; }
+    .s3 .dither-word { font-size: 68px; } .s4 .dither-word { font-size: 112px; }
+    .plain { color: var(--text); font-weight: 400; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top"><span class="brand-name">Nod</span><a href="index.html">Back to the landing page</a></div>
+    <div class="intro">
+      <p class="eyebrow">Review</p>
+      <h1>The dither alphabet</h1>
+      <p class="lede">Every letter below is the real Plus Jakarta Sans glyph redrawn as dots by the same code that sets the dithered words on the landing page. Static view, no animation. Tell me which letters or sizes look wrong.</p>
+    </div>
+
+    <section class="group"><h2>Uppercase</h2><div class="grid">
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">A</span></span><span class="lab">A</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">B</span></span><span class="lab">B</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">C</span></span><span class="lab">C</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">D</span></span><span class="lab">D</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">E</span></span><span class="lab">E</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">F</span></span><span class="lab">F</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">G</span></span><span class="lab">G</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">H</span></span><span class="lab">H</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">I</span></span><span class="lab">I</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">J</span></span><span class="lab">J</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">K</span></span><span class="lab">K</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">L</span></span><span class="lab">L</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">M</span></span><span class="lab">M</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">N</span></span><span class="lab">N</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">O</span></span><span class="lab">O</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">P</span></span><span class="lab">P</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">Q</span></span><span class="lab">Q</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">R</span></span><span class="lab">R</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">S</span></span><span class="lab">S</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">T</span></span><span class="lab">T</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">U</span></span><span class="lab">U</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">V</span></span><span class="lab">V</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">W</span></span><span class="lab">W</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">X</span></span><span class="lab">X</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">Y</span></span><span class="lab">Y</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">Z</span></span><span class="lab">Z</span></div>
+    </div></section>
+
+    <section class="group"><h2>Lowercase</h2><div class="grid">
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">a</span></span><span class="lab">a</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">b</span></span><span class="lab">b</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">c</span></span><span class="lab">c</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">d</span></span><span class="lab">d</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">e</span></span><span class="lab">e</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">f</span></span><span class="lab">f</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">g</span></span><span class="lab">g</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">h</span></span><span class="lab">h</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">i</span></span><span class="lab">i</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">j</span></span><span class="lab">j</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">k</span></span><span class="lab">k</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">l</span></span><span class="lab">l</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">m</span></span><span class="lab">m</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">n</span></span><span class="lab">n</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">o</span></span><span class="lab">o</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">p</span></span><span class="lab">p</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">q</span></span><span class="lab">q</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">r</span></span><span class="lab">r</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">s</span></span><span class="lab">s</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">t</span></span><span class="lab">t</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">u</span></span><span class="lab">u</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">v</span></span><span class="lab">v</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">w</span></span><span class="lab">w</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">x</span></span><span class="lab">x</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">y</span></span><span class="lab">y</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">z</span></span><span class="lab">z</span></div>
+    </div></section>
+
+    <section class="group"><h2>Digits and punctuation</h2><div class="grid">
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">0</span></span><span class="lab">0</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">1</span></span><span class="lab">1</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">2</span></span><span class="lab">2</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">3</span></span><span class="lab">3</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">4</span></span><span class="lab">4</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">5</span></span><span class="lab">5</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">6</span></span><span class="lab">6</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">7</span></span><span class="lab">7</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">8</span></span><span class="lab">8</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">9</span></span><span class="lab">9</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">.</span></span><span class="lab">.</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">,</span></span><span class="lab">,</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">!</span></span><span class="lab">!</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">?</span></span><span class="lab">?</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">:</span></span><span class="lab">:</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">-</span></span><span class="lab">-</span></div>
+<div class="cell"><span class="accent dither-word" data-static><span class="dither-text">+</span></span><span class="lab">+</span></div>
+    </div></section>
+
+    <section class="group"><h2>Words used on the page, at four sizes</h2><div class="words">
+      <div class="wrow"><span class="lab">Nod.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">Nod.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">Nod.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">Nod.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">Nod.</span></span></span></div></div>
+      <div class="wrow"><span class="lab">money.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">money.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">money.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">money.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">money.</span></span></span></div></div>
+      <div class="wrow"><span class="lab">funds.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">funds.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">funds.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">funds.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">funds.</span></span></span></div></div>
+      <div class="wrow"><span class="lab">does.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">does.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">does.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">does.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">does.</span></span></span></div></div>
+      <div class="wrow"><span class="lab">gets.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">gets.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">gets.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">gets.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">gets.</span></span></span></div></div>
+      <div class="wrow"><span class="lab">desk.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">desk.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">desk.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">desk.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">desk.</span></span></span></div></div>
+      <div class="wrow"><span class="lab">lines.</span><div class="samples"><span class="s1"><span class="accent dither-word" data-static><span class="dither-text">lines.</span></span></span><span class="s2"><span class="accent dither-word" data-static><span class="dither-text">lines.</span></span></span><span class="s3"><span class="accent dither-word" data-static><span class="dither-text">lines.</span></span></span><span class="s4"><span class="accent dither-word" data-static><span class="dither-text">lines.</span></span></span></div></div>
+    </div></section>
+  </div>
+  <script src="dither-word.js?v=19"></script>
+</body>
+</html>
