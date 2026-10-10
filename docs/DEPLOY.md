@@ -8,7 +8,7 @@ Nod is composable: there is **no central server**. You run the small Nod backend
 
 One backend can serve several people (each phone sees only its own agents), so a team can share one, or everyone can run their own.
 
-> **Status:** the container files were written and checked step by step (install, build, production start, safety guards) but the image itself has **not** been built with Docker yet. The first `docker build` is part of your verification.
+> **Status:** the image was built and run with Docker (Colima, arm64): it starts, `/health` reports healthy, the process runs as the non-root `node` user, and the SQLite data survives a restart on the `/data` volume. Not yet tested on x86-64 or on a real cloud host, nor with push credentials.
 
 ## What you need
 
