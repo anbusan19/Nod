@@ -55,13 +55,93 @@ a { color: inherit; text-decoration: none; }
 .links a:hover { color: var(--text); }
 
 .hero {
+  --k: min(70vw, 980px, calc((100svh - 84px) * 1.2));
+  position: relative;
+  overflow: hidden;
   min-height: calc(100svh - 84px);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(24px, 5vw, 72px);
-  padding-block: 24px 64px;
+  padding-block: clamp(24px, 6vh, 72px) 64px;
 }
+.hero-copy { position: relative; z-index: 1; max-width: 46rem; }
+.eyebrow {
+  margin: 0 0 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(40px, 6.6vw, 112px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.accent { color: var(--accent); }
+.lede {
+  margin: 24px 0 0;
+  max-width: 36em;
+  font-size: clamp(16px, 1.5vw, 19px);
+  color: var(--muted);
+}
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 22px;
+  border-radius: 14px;
+  font-weight: 500; font-size: 15px;
+  border: 1px solid transparent;
+  transition: transform .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--primary); color: var(--on-primary); }
+.btn.primary:hover { background: #AEBDFF; }
+.btn.ghost { border-color: var(--border); color: var(--text); background: var(--card); }
+.btn.ghost:hover { border-color: var(--accent); }
+.btn:focus-visible, .links a:focus-visible, .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.flow {
+  list-style: none; margin: 44px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 8px 28px;
+  font-family: var(--mono); font-size: 13px; color: var(--muted);
+}
+.flow span { color: var(--accent); margin-right: 6px; }
+
+/* The knot emerges from the bottom-right corner; the hero clips whatever runs past the edge. */
+.hero-art { position: absolute; right: calc(var(--k) * -0.1); bottom: calc(var(--k) * -0.12); width: var(--k); }
+#knot { width: 100%; aspect-ratio: 1 / 1; display: block; }
+
+/* The word that dithers: the real text keeps its place in the layout and stays selectable,
+   a canvas of dots is drawn over it (dither-word.js). */
+.dither-word { position: relative; display: inline-block; }
+.dither-word canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+.dither-word.is-ready .dither-text { color: transparent; }
+
+.next { width: 100%; padding-inline: clamp(16px, 4vw, 72px); }
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-block: 20px;
+}
+.brand { display: inline-flex; align-items: center; gap: 12px; }
+.mark {
+  width: 32px; height: 32px; border-radius: 9px; overflow: hidden; display: block;
+}
+/* The light logo has a white background; multiply makes it vanish into the page like in the app. */
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .mark { mix-blend-mode: multiply; } }
+.mark img { width: 100%; height: 100%; display: block; }
+.brand-name { font-weight: 400; font-size: 20px; letter-spacing: -0.01em; }
+.links { display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
+.links a:hover { color: var(--text); }
+
+.hero {
+  --k: min(70vw, 980px, calc((100svh - 84px) * 1.2));
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100svh - 84px);
+  padding-block: clamp(24px, 6vh, 72px) 64px;
+}
+.hero-copy { position: relative; z-index: 1; max-width: 46rem; }
 .eyebrow {
   margin: 0 0 20px;
   font-family: var(--mono);
@@ -118,9 +198,7 @@ h1 {
 .next { padding-block: 80px; }
 
 @media (max-width: 860px) {
-  .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 8px; }
-  .hero-art { order: -1; place-items: center; }
-  #knot { width: min(78%, 360px); }
+  .hero { --k: min(110vw, 620px); padding-bottom: calc(var(--k) * 0.62); }
   .links a:not(:last-child) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
