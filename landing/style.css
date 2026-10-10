@@ -520,3 +520,7 @@ html[data-view="agents"] .nav .switch { margin-left: auto; }
 .foot-cols a { font-size: 12px; color: var(--text); }
 .foot-cols span { font-size: 11px; line-height: 1.5; }
 .foot-cols > div { gap: 10px; }
+
+/* header mark: the Braille knot, drawn on a small canvas (theme.js) */
+.mark { width: 34px; height: 34px; border-radius: 0; background: none; mix-blend-mode: normal !important; overflow: visible; }
+.mark-knot { display: block; width: 34px; height: 34px; }

@@ -10,13 +10,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>document.documentElement.classList.add("js");(function(){try{var t=localStorage.getItem("nod-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}})();</script>
-  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
   <header class="nav" id="nav">
     <a class="brand" href="index.html" aria-label="Nod home">
       <span class="mark">
-        <img class="mk-light" src="assets/icon-light.png" alt="" width="32" height="32"><img class="mk-dark" src="assets/icon-dark.png" alt="" width="32" height="32">
+        <canvas class="mark-knot" width="34" height="34" aria-hidden="true"></canvas>
       </span>
       <span class="brand-name">Nod</span>
     </a>
@@ -205,7 +205,8 @@
     </footer>
   </div>
 
-  <script src="theme.js?v=28"></script>
+  <script src="knot.js?v=29"></script>
+  <script src="theme.js?v=29"></script>
   <script>document.querySelectorAll("[data-todo]").forEach(function(a){a.addEventListener("click",function(e){e.preventDefault()})});</script>
 </body>
 </html>
