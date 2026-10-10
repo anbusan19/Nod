@@ -278,11 +278,11 @@ p { color: var(--muted); }
 .mock-rows dt { color: var(--muted); } .mock-rows dd { margin: 0; font-family: var(--mono); font-size: 12.5px; text-align: right; }
 .phone[data-state="decode"] .mock-rows div { animation: fadeUp .5s var(--ease) both; animation-delay: calc(var(--i) * .25s + .2s); }
 /* fingerprint: appears over the rows only while "Hold to approve" is being pressed */
-.mid { position: relative; }
+.mid { position: static; } /* so .fp covers the whole card, like .signed */
 .mock-rows { transition: opacity .35s ease; }
-.fp { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .25s ease; color: var(--accent); background: var(--card-2); border: 1px solid var(--border); border-radius: 8px; }
+.fp { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .25s ease; color: var(--accent); background: var(--card); }
 .phone[data-state="scan"] .fp { opacity: 1; }
-.fp-art { position: relative; width: 64px; height: 64px; }
+.fp-art { position: relative; width: 84px; height: 84px; }
 .fp-art::before { content: ""; position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; border: 1px solid currentColor; opacity: 0; }
 .fp-art svg { position: relative; display: block; }
 .fp-base { opacity: .22; }
