@@ -35,10 +35,10 @@
   })();
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let colors = { accent: "#99ACFF", ghost: "rgba(255,255,255,.09)" };
+  let colors = { accent: "#99ACFF" };
   const readColors = () => {
     const s = getComputedStyle(document.documentElement);
-    colors = { accent: s.getPropertyValue("--accent").trim(), ghost: s.getPropertyValue("--ghost").trim() };
+    colors = { accent: s.getPropertyValue("--accent").trim() };
   };
   readColors();
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); draw(performance.now()); });
@@ -79,6 +79,7 @@
     const phase = reduced ? -1 : ((t - INTRO) % PERIOD) / PERIOD * 1.8 - 0.4; // band centre along the diagonal
     const r = size.cell * 0.4;
     const holeR = 11;
+    ctx.fillStyle = colors.accent;
 
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
@@ -102,11 +103,9 @@
           }
         }
 
-        const px = size.ox + (x + 0.5) * size.cell;
-        const py = size.oy + (y + 0.5) * size.cell;
-        ctx.fillStyle = shown ? colors.accent : colors.ghost;
+        if (!shown) continue;
         ctx.beginPath();
-        ctx.arc(px, py, shown ? r : r * 0.6, 0, 6.2832);
+        ctx.arc(size.ox + (x + 0.5) * size.cell, size.oy + (y + 0.5) * size.cell, r, 0, 6.2832);
         ctx.fill();
       }
     }

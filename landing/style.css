@@ -9,7 +9,6 @@
   --primary: #99ACFF;
   --on-primary: #070606;
   --accent: #3A55C8;
-  --ghost: rgba(11, 13, 18, 0.10);
   --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light dark;
@@ -17,12 +16,12 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #070606; --card: #131212; --text: #F3F2F2; --muted: #9C9A9A; --border: #292727;
-    --accent: #99ACFF; --ghost: rgba(243, 242, 242, 0.09);
+    --accent: #99ACFF;
   }
 }
 :root[data-theme="dark"] {
   --bg: #070606; --card: #131212; --text: #F3F2F2; --muted: #9C9A9A; --border: #292727;
-  --accent: #99ACFF; --ghost: rgba(243, 242, 242, 0.09);
+  --accent: #99ACFF;
 }
 
 * { box-sizing: border-box; }
