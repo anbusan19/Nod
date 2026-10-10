@@ -366,7 +366,7 @@ p { color: var(--muted); }
 .foot-cols span { color: var(--muted); font-size: 13px; }
 
 .band-foot { position: relative; margin-top: 56px; overflow: hidden; }
-#footKnot { display: block; width: min(360px, 60vw); aspect-ratio: 1 / 1; margin: 0 auto -160px; position: relative; z-index: 1; }
+#footKnot { display: block; width: min(360px, 60vw); aspect-ratio: 1 / 1; margin: 0 auto -124px; position: relative; z-index: 1; }
 .stripes { position: relative; z-index: 2; display: grid; height: 190px; }
 .stripes i { display: block; }
 .stripes i:nth-child(1) { background: #B9C6FF; } .stripes i:nth-child(2) { background: #99ACFF; }
@@ -505,3 +505,7 @@ html[data-view="agents"] .nav .switch { margin-left: auto; }
   .toc p { display: none; }
   .toc a { white-space: nowrap; }
 }
+
+/* header: logo only; hero title in bold */
+.nav .brand-name { display: none; }
+.hero h1 { font-weight: 700; }
