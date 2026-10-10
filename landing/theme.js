@@ -28,7 +28,7 @@
     const BITS = [[0, 0, 1], [0, 1, 2], [0, 2, 4], [1, 0, 8], [1, 1, 16], [1, 2, 32], [0, 3, 64], [1, 3, 128]];
     document.querySelectorAll(".mark-knot").forEach((cv) => {
       if (!rows) return;
-      const size = 34, dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const size = 26, dpr = Math.min(window.devicePixelRatio || 1, 3);
       cv.width = size * dpr; cv.height = size * dpr;
       const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const W = rows[0].length * 2, H = rows.length * 4, cell = size / Math.max(W, H);
