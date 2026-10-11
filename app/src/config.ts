@@ -1,8 +1,19 @@
 export type Cluster = "devnet" | "mainnet-beta";
 
+/**
+ * The server baked in at build time. A release build only speaks https, so an http:// address (the usual
+ * `adb reverse` setup in .env) is ignored there: the app asks for a server instead of showing a network error.
+ */
+export function builtInServer(raw: string | undefined, dev: boolean): string {
+  const url = (raw ?? "").trim();
+  if (!url) return "";
+  if (url.startsWith("https://")) return url;
+  return dev && url.startsWith("http://") ? url : "";
+}
+
 export const config = {
   /** Optional built-in server. Empty means the app asks the user which Nod backend to use. */
-  apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "",
+  apiUrl: builtInServer(process.env.EXPO_PUBLIC_API_URL, typeof __DEV__ !== "undefined" && __DEV__),
   cluster: (process.env.EXPO_PUBLIC_SOLANA_CLUSTER ?? "devnet") as Cluster,
   rpcUrl: process.env.EXPO_PUBLIC_SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
   /** A node per cluster, so a transaction can be decoded and simulated on the cluster it targets. */

@@ -15,7 +15,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "automatic",
   android: {
     package: "app.nod.mobile",
-    versionCode: 1, // bump on every release build; Android refuses lower numbers
+    versionCode: 2, // bump on every release build; Android refuses lower numbers
     googleServicesFile,
     permissions: ["USE_BIOMETRIC"],
     // App Links for the landing site, so Android verifies this app against its assetlinks.json (what Phantom
