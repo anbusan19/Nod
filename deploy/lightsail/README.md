@@ -31,7 +31,8 @@ Back up the salt. Changing it later invalidates every agent key and device token
 ## 5. Start
 ```bash
 cd deploy/lightsail
-NOD_DOMAIN=13-234-1-2.sslip.io docker compose up -d --build
+echo "NOD_DOMAIN=13-234-1-2.sslip.io" > .env     # read automatically by every docker compose command here
+docker compose up -d --build
 docker compose logs -f caddy nod      # wait for "certificate obtained" and the backend listening
 curl https://13-234-1-2.sslip.io/health
 ```
