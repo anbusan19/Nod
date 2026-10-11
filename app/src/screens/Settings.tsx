@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
-import { Alert, Linking, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
+import { Linking, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
 import { getServerUrl } from "../api/client";
 import { inspectServer, parseServerUrl } from "../api/server";
 import { addServer, loadServers, markChecked, normalizeUrl, removeServer, renameServer, sortServers, upsertServer, type SavedServer } from "../api/servers";
@@ -8,6 +8,7 @@ import { fonts } from "../theme/fonts";
 import { ServerList } from "../components/ServerList";
 import { ThemeSwitch } from "../components/ThemeSwitch";
 import { Button, Card, Checkbox, Mono, T } from "../components/ui";
+import { dialog } from "../components/Dialog";
 import type { AuthPrefs } from "../security/authPlan";
 import { availableSensors, confirmWithBiometrics, currentPlan, savePrefs } from "../security/biometric";
 import { disablePush, enablePush, getPushStatus } from "../push/notifications";
@@ -150,7 +151,7 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
 
   /** Stop using the current server. It stays in the list, so switching back brings its agents back. */
   const disconnectServer = () =>
-    Alert.alert(
+    dialog.alert(
       "Disconnect from this server?",
       "Nod will stop checking it for requests. It stays in your list, and its paired agents stay paired there, so you can switch back at any time.",
       [
@@ -191,10 +192,10 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
     const inUse = normalizeUrl(url) === normalizeUrl(server);
     const other = servers.find((x) => normalizeUrl(x.url) !== normalizeUrl(url));
     if (inUse && !other) {
-      Alert.alert("This is your only server", "Nod needs a server to work. Add another one with the + button first, then you can delete this one.");
+      dialog.alert("This is your only server", "Nod needs a server to work. Add another one with the + button first, then you can delete this one.");
       return;
     }
-    Alert.alert(
+    dialog.alert(
       "Delete this server?",
       inUse
         ? `It is only removed from your list; this phone keeps its registration there, so adding it again brings your paired agents back. You will be switched to ${other!.name} first.`

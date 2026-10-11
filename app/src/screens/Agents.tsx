@@ -1,9 +1,10 @@
 import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Switch, TextInput, View } from "react-native";
 import { api, getServerUrl, type Agent, type Policy } from "../api/client";
 import { Feather } from "@expo/vector-icons";
 import { Badge, Button, Card, Mono, T } from "../components/ui";
+import { dialog } from "../components/Dialog";
 import { Logo } from "../components/Logo";
 import { useApp } from "../state";
 import { fonts } from "../theme/fonts";
@@ -65,14 +66,14 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
   const [newKey, setNewKey] = useState<string>();
 
   const confirm = (title: string, message: string, action: string, onYes: () => void) =>
-    Alert.alert(title, message, [{ text: "Cancel", style: "cancel" }, { text: action, style: "destructive", onPress: onYes }]);
+    dialog.alert(title, message, [{ text: "Cancel", style: "cancel" }, { text: action, style: "destructive", onPress: onYes }]);
 
   const rotate = () =>
     confirm("Make a new key?", `The key ${agent.name} uses now stops working immediately. You will have to give it the new key.`, "Make new key", async () => {
       try {
         setNewKey((await api.rotateKey(agent.id)).apiKey);
       } catch (e) {
-        Alert.alert("Could not rotate", (e as Error).message);
+        dialog.alert("Could not rotate", (e as Error).message);
       }
     });
 
@@ -82,7 +83,7 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
         await api.removeAgent(agent.id);
         await refresh();
       } catch (e) {
-        Alert.alert("Could not remove", (e as Error).message);
+        dialog.alert("Could not remove", (e as Error).message);
       }
     });
 
@@ -96,7 +97,7 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
       ...patch,
     };
     if ([next.autoLimitLamports, next.hardCapLamports, next.dailyCapLamports].some((n) => !Number.isFinite(n) || n < 0)) {
-      Alert.alert("Invalid limits", "Limits must be positive numbers of SOL.");
+      dialog.alert("Invalid limits", "Limits must be positive numbers of SOL.");
       return;
     }
     setSaving(true);
@@ -104,14 +105,14 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
       await api.setPolicy(agent.id, next);
       await refresh();
     } catch (e) {
-      Alert.alert("Could not save", (e as Error).message);
+      dialog.alert("Could not save", (e as Error).message);
     }
     setSaving(false);
   };
 
   const toggleFreeze = async (frozen: boolean) => {
     Haptics.notificationAsync(frozen ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success).catch(() => {});
-    await api.setFrozen(agent.id, frozen).catch((e) => Alert.alert("Failed", e.message));
+    await api.setFrozen(agent.id, frozen).catch((e) => dialog.alert("Failed", e.message));
     refresh();
   };
 

@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { ActivityIndicator, BackHandler, Pressable, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { T } from "./src/components/ui";
+import { DialogHost } from "./src/components/Dialog";
 import { onProposalOpened, registerForPush } from "./src/push/notifications";
 import { About } from "./src/screens/About";
 import { Agents } from "./src/screens/Agents";
@@ -109,6 +110,7 @@ function Frame() {
         <Shell />
       </SafeAreaView>
       <StatusBar style={dark ? "light" : "dark"} />
+      <DialogHost />
     </>
   );
 }
