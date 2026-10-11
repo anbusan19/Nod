@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { STATUS_FILTERS, countByFilter, dayLabel, filterActivity, type StatusFilterKey } from "../activity/filter";
-import type { Proposal } from "../api/client";
-import { Badge, Card, Mono, T } from "../components/ui";
+import { getServerUrl, type Proposal } from "../api/client";
+import { Badge, Button, Card, Mono, T } from "../components/ui";
 import { useApp } from "../state";
 import { formatSol, deserialize, decodeTransaction, shorten } from "../solana/decode";
 import { Logo } from "../components/Logo";
@@ -50,6 +51,92 @@ function Row({ p, onPress }: { p: Proposal; onPress: () => void }) {
   );
 }
 
+function ago(ms: number): string {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  return new Date(ms).toLocaleDateString();
+}
+
+/** A request that is waiting for you: bigger, with an accent edge so it stands out from history. */
+function ApprovalRow({ p, onPress }: { p: Proposal; onPress: () => void }) {
+  const c = useColors();
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`Review request from ${p.agentName ?? "agent"}`} onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+      <Card style={{ gap: 10, borderLeftWidth: 4, borderLeftColor: c.warn }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: c.warnBg, alignItems: "center", justifyContent: "center" }}>
+              <Feather name="cpu" size={15} color={c.warn} />
+            </View>
+            <T weight="semibold" numberOfLines={1} style={{ flexShrink: 1 }}>{p.agentName ?? "Agent"}</T>
+          </View>
+          <T size={12} muted>{ago(p.createdAt)}</T>
+        </View>
+        <T size={20} weight="bold">{summary(p)}</T>
+        {p.reason ? <T size={14} muted numberOfLines={2}>“{p.reason}”</T> : null}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+          <Badge label="Needs your Nod" tone="warn" />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <T size={14} weight="semibold" style={{ color: c.accentText }}>Review</T>
+            <Feather name="chevron-right" size={18} color={c.accentText} />
+          </View>
+        </View>
+      </Card>
+    </Pressable>
+  );
+}
+
+/** Nothing waiting: say it is fine, and show what Nod is doing so the screen is never a dead end. */
+function AllClear({ server, agentCount, error, onRetry, onNavigate }: { server: string; agentCount: number; error?: string; onRetry: () => void; onNavigate: (tab: "Activity" | "Agents") => void }) {
+  const c = useColors();
+  const host = (() => {
+    try {
+      return new URL(server).host;
+    } catch {
+      return server || "no server";
+    }
+  })();
+  return (
+    <View style={{ alignItems: "center", gap: 18, paddingTop: 28 }}>
+      <View style={{ width: 108, height: 108, borderRadius: 54, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" }}>
+        <Logo size={64} radius={18} />
+      </View>
+      <View style={{ alignItems: "center", gap: 6 }}>
+        <T size={22} weight="bold">{error ? "Can't reach your server" : "All clear"}</T>
+        <T muted style={{ textAlign: "center" }}>
+          {error
+            ? "Nod could not load your requests. Check the server address in Settings, or try again."
+            : agentCount === 0
+              ? "No agents are paired yet. Pair one and its requests will show up here."
+              : "Nothing is waiting for your Nod. When an agent proposes a transaction, it appears here and you get a notification."}
+        </T>
+      </View>
+
+      <Card style={{ alignSelf: "stretch", gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <T size={13} muted>Server</T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: error ? c.danger : c.ok }} />
+            <Mono size={13} style={{ flexShrink: 1 }}>{host}</Mono>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <T size={13} muted>Agents paired</T>
+          <Mono size={13}>{agentCount}</Mono>
+        </View>
+      </Card>
+
+      <View style={{ alignSelf: "stretch", gap: 10 }}>
+        {error ? <Button title="Try again" onPress={onRetry} /> : null}
+        {!error && agentCount === 0 ? <Button title="Pair your first agent" onPress={() => onNavigate("Agents")} /> : null}
+        {!error && agentCount > 0 ? <Button title="See activity" kind="secondary" onPress={() => onNavigate("Activity")} /> : null}
+      </View>
+    </View>
+  );
+}
+
 function Chip({ label, count, selected, onPress }: { label: string; count?: number; selected: boolean; onPress: () => void }) {
   const c = useColors();
   return (
@@ -67,9 +154,14 @@ function Chip({ label, count, selected, onPress }: { label: string; count?: numb
   );
 }
 
-export function Inbox({ mode }: { mode: "approvals" | "activity" }) {
+export function Inbox({ mode, onNavigate }: { mode: "approvals" | "activity"; onNavigate?: (tab: "Activity" | "Agents") => void }) {
   const c = useColors();
-  const { proposals, openProposal, error, ready } = useApp();
+  const { proposals, openProposal, error, ready, agents, refresh } = useApp();
+  const [server, setServer] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    getServerUrl().then(setServer).catch(() => {});
+  }, [proposals.length, error]);
   const isActivity = mode === "activity";
   const [status, setStatus] = useState<StatusFilterKey>("all");
   const [agentId, setAgentId] = useState<string>();
@@ -90,22 +182,31 @@ export function Inbox({ mode }: { mode: "approvals" | "activity" }) {
       style={{ flex: 1, backgroundColor: c.bg }}
       contentContainerStyle={{ padding: 16, gap: 12 }}
       data={data}
+      refreshing={refreshing}
+      onRefresh={async () => {
+        setRefreshing(true);
+        await refresh().catch(() => {});
+        setRefreshing(false);
+      }}
       keyExtractor={(p) => p.id}
       renderItem={({ item, index }) => (
         <View style={{ gap: 8 }}>
           {isActivity && (index === 0 || dayLabel(data[index - 1].createdAt) !== dayLabel(item.createdAt)) && (
             <T size={13} weight="semibold" muted style={{ marginTop: index === 0 ? 0 : 6 }}>{dayLabel(item.createdAt)}</T>
           )}
-          <Row p={item} onPress={() => openProposal(item.id)} />
+          {mode === "approvals" ? <ApprovalRow p={item} onPress={() => openProposal(item.id)} /> : <Row p={item} onPress={() => openProposal(item.id)} />}
         </View>
       )}
       ListHeaderComponent={
         <View style={{ gap: 8, marginBottom: 4 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Logo size={36} radius={10} />
-            <T size={24} weight="bold">{mode === "approvals" ? "Needs your Nod" : "Activity"}</T>
+            <View style={{ flex: 1 }}>
+              <T size={24} weight="bold">{mode === "approvals" ? "Needs your Nod" : "Activity"}</T>
+              {mode === "approvals" && data.length > 0 ? <T size={13} muted>{data.length === 1 ? "1 request is waiting" : `${data.length} requests are waiting`}</T> : null}
+            </View>
           </View>
-          {error && <T size={13} style={{ color: c.danger }}>Can't reach the backend: {error}</T>}
+          {error && data.length > 0 && <T size={13} style={{ color: c.danger }}>Can't reach the backend: {error}</T>}
           {isActivity && proposals.length > 0 && (
             <View style={{ gap: 8 }}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -135,9 +236,11 @@ export function Inbox({ mode }: { mode: "approvals" | "activity" }) {
       }
       ListEmptyComponent={
         ready ? (
-          <T muted>
-            {mode === "approvals" ? "Nothing waiting. Agents will show up here when they need you." : filtering ? "Nothing matches these filters." : "No activity yet."}
-          </T>
+          mode === "approvals" ? (
+            <AllClear server={server} agentCount={agents.length} error={error} onRetry={() => refresh()} onNavigate={(t) => onNavigate?.(t)} />
+          ) : (
+            <T muted>{filtering ? "Nothing matches these filters." : "No activity yet."}</T>
+          )
         ) : null
       }
     />

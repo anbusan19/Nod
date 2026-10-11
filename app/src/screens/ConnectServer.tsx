@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { ScrollView, Switch, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, Switch, TextInput, View } from "react-native";
 import { config } from "../config";
 import { inspectServer, parseServerUrl } from "../api/server";
+import { loadServers, sortServers, type SavedServer } from "../api/servers";
+import { kv } from "../storage";
 import { Button, Card, T } from "../components/ui";
 import { useApp } from "../state";
 import { Logo } from "../components/Logo";
@@ -16,6 +18,10 @@ export function ConnectServer() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>();
 
+  const [saved, setSaved] = useState<SavedServer[]>([]);
+  useEffect(() => {
+    loadServers(kv).then((l) => setSaved(sortServers(l))).catch(() => {});
+  }, []);
   const community = config.communityServer;
   const useCommunity = Boolean(community) && input === community;
   const toggleCommunity = (on: boolean) => {
@@ -92,6 +98,24 @@ export function ConnectServer() {
         {message && <T size={13} style={{ color: c.danger }}>{message}</T>}
         <Button title="Connect" onPress={connect} loading={busy} disabled={input.trim().length === 0} />
       </Card>
+      {saved.length > 0 && (
+        <Card style={{ gap: 8 }}>
+          <T weight="semibold">Your saved servers</T>
+          {saved.map((sv) => (
+            <Pressable
+              key={sv.url}
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={() => { setInput(sv.url); setMessage(undefined); }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 12, gap: 2 })}
+            >
+              <T size={14} weight="semibold">{sv.name}</T>
+              <T size={12} muted>{sv.url}</T>
+            </Pressable>
+          ))}
+          <T size={12} muted>Tap one to fill the address above, then Connect.</T>
+        </Card>
+      )}
       <View style={{ height: 24 }} />
     </ScrollView>
   );

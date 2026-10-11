@@ -148,6 +148,28 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
     return switchTo(other.url);
   };
 
+  /** Stop using the current server. It stays in the list, so switching back brings its agents back. */
+  const disconnectServer = () =>
+    Alert.alert(
+      "Disconnect from this server?",
+      "Nod will stop checking it for requests. It stays in your list, and its paired agents stay paired there, so you can switch back at any time.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: () =>
+            runServer(async () => {
+              await changeServer(undefined);
+              const now = await getServerUrl();
+              setServer(now);
+              await reloadServers();
+              return now ? `Back on the built-in server, ${now}.` : "Disconnected. Pick a server to continue.";
+            }),
+        },
+      ],
+    );
+
   const testServer = (url: string) => {
     setTesting(url);
     return runServer(async () => {
@@ -381,6 +403,8 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
         ) : null}
 
         <ServerList servers={servers} current={server} busy={serverBusy} testing={testing} onUse={switchTo} onRename={renameSaved} onRemove={removeSaved} onTest={testServer} />
+
+        {server ? <Button title="Disconnect from this server" kind="danger" disabled={serverBusy} onPress={disconnectServer} /> : null}
       </Card>
 
       <Card style={{ gap: 6 }}>

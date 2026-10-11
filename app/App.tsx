@@ -65,7 +65,7 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flex: 1 }}>
-        {tab === "Approvals" && <Inbox mode="approvals" />}
+        {tab === "Approvals" && <Inbox mode="approvals" onNavigate={setTab} />}
         {tab === "Activity" && <Inbox mode="activity" />}
         {tab === "Agents" && <Agents />}
         {tab === "Settings" && <Settings onOpenAbout={() => setShowAbout(true)} />}
