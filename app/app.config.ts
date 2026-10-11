@@ -15,6 +15,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "automatic",
   android: {
     package: "app.nod.mobile",
+    versionCode: 1, // bump on every release build; Android refuses lower numbers
     googleServicesFile,
     permissions: ["USE_BIOMETRIC"],
     adaptiveIcon: {
