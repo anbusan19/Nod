@@ -1,0 +1,33 @@
+# Nod backend behind Caddy (automatic HTTPS) on one small Linux server, such as an AWS Lightsail instance.
+# Run from this folder:  NOD_DOMAIN=<your-domain> docker compose up -d --build
+# Needs ../../.env.production (copy .env.production.example and fill it in). See README.md here.
+services:
+  nod:
+    build:
+      context: ../..
+    restart: unless-stopped
+    env_file: ../../.env.production
+    volumes:
+      - nod-data:/data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - nod
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      NOD_DOMAIN: ${NOD_DOMAIN:?set NOD_DOMAIN, for example nod.example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  nod-data:
+  caddy-data:
+  caddy-config:
