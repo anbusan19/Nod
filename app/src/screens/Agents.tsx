@@ -34,8 +34,8 @@ function Stat({ label, value }: { label: string; value: string }) {
   const c = useColors();
   return (
     <View style={{ flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, gap: 1 }}>
-      <T size={11} muted>{label}</T>
-      <Mono size={14} medium>{value}</Mono>
+      <T size={11} muted numberOfLines={1}>{label}</T>
+      <Mono size={14} medium numberOfLines={1}>{value}</Mono>
     </View>
   );
 }
@@ -139,9 +139,9 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
         </View>
         {p && (
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <Stat label="Auto up to" value={`${fmtSol(p.autoLimitLamports)} SOL`} />
-            <Stat label="Max per tx" value={`${fmtSol(p.hardCapLamports)} SOL`} />
-            <Stat label="Daily cap" value={`${fmtSol(p.dailyCapLamports)} SOL`} />
+            <Stat label="Auto up to (SOL)" value={fmtSol(p.autoLimitLamports)} />
+            <Stat label="Max per tx (SOL)" value={fmtSol(p.hardCapLamports)} />
+            <Stat label="Daily cap (SOL)" value={fmtSol(p.dailyCapLamports)} />
           </View>
         )}
         <T size={12} muted>
