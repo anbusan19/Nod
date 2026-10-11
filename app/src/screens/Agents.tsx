@@ -1,9 +1,10 @@
 import * as Haptics from "expo-haptics";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
-import { api, type Agent, type Policy } from "../api/client";
+import { api, getServerUrl, type Agent, type Policy } from "../api/client";
 import { Feather } from "@expo/vector-icons";
 import { Badge, Button, Card, Mono, T } from "../components/ui";
+import { Logo } from "../components/Logo";
 import { useApp } from "../state";
 import { fonts } from "../theme/fonts";
 import { useColors } from "../theme/colors";
@@ -28,6 +29,26 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 }
 
 const fmtSol = (l: number) => `${Number((l / LAMPORTS).toFixed(4))}`;
+
+function Stat({ label, value }: { label: string; value: string }) {
+  const c = useColors();
+  return (
+    <View style={{ flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, gap: 1 }}>
+      <T size={11} muted>{label}</T>
+      <Mono size={14} medium>{value}</Mono>
+    </View>
+  );
+}
+
+function Section({ title, hint }: { title: string; hint?: string }) {
+  const c = useColors();
+  return (
+    <View style={{ gap: 2, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border }}>
+      <T size={12} weight="semibold" muted style={{ letterSpacing: 0.6 }}>{title.toUpperCase()}</T>
+      {hint ? <T size={12} muted>{hint}</T> : null}
+    </View>
+  );
+}
 
 function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onToggle: () => void }) {
   const { refresh, proposals } = useApp();
@@ -101,32 +122,46 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${agent.name}, ${open ? "collapse" : "expand"} settings`}
         onPress={onToggle}
-        style={{ gap: 6 }}
+        style={{ gap: 12 }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <T size={18} weight="semibold" style={{ flexShrink: 1 }}>{agent.name}</T>
-          <Badge label={agent.frozen ? "Frozen" : "Active"} tone={agent.frozen ? "danger" : "ok"} />
-          <View style={{ flex: 1 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: agent.frozen ? c.dangerBg : c.okBg, alignItems: "center", justifyContent: "center" }}>
+            <Feather name={agent.frozen ? "pause" : "cpu"} size={21} color={agent.frozen ? c.danger : c.ok} />
+          </View>
+          <View style={{ flex: 1, gap: 4 }}>
+            <T size={18} weight="semibold" numberOfLines={1}>{agent.name}</T>
+            <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
+              <Badge label={agent.frozen ? "Frozen" : "Active"} tone={agent.frozen ? "danger" : "ok"} />
+              {waiting > 0 ? <Badge label={`${waiting} waiting`} tone="warn" /> : null}
+            </View>
+          </View>
           <Feather name={open ? "chevron-up" : "chevron-down"} size={22} color={c.muted} />
         </View>
-        {p && <T size={13} muted>Auto up to {fmtSol(p.autoLimitLamports)} · Max {fmtSol(p.hardCapLamports)} · Daily {fmtSol(p.dailyCapLamports)} SOL</T>}
-        <T size={13} muted>
-          {waiting > 0 ? `${waiting} waiting for you · ` : ""}
+        {p && (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Stat label="Auto up to" value={`${fmtSol(p.autoLimitLamports)} SOL`} />
+            <Stat label="Max per tx" value={`${fmtSol(p.hardCapLamports)} SOL`} />
+            <Stat label="Daily cap" value={`${fmtSol(p.dailyCapLamports)} SOL`} />
+          </View>
+        )}
+        <T size={12} muted>
           {mine.length === 0 ? "No proposals yet" : `${mine.length} proposal${mine.length === 1 ? "" : "s"}${last ? ` · last ${new Date(last).toLocaleDateString()}` : ""}`}
         </T>
       </Pressable>
       {open && (
         <>
+      <Section title="Status" />
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <T size={13} style={{ color: agent.frozen ? c.danger : c.muted }}>{agent.frozen ? "Frozen: every proposal is blocked" : "Freeze this agent"}</T>
+        <T size={13} style={{ color: agent.frozen ? c.danger : c.muted, flexShrink: 1 }}>{agent.frozen ? "Frozen: every proposal is blocked" : "Freeze this agent"}</T>
         <Switch value={agent.frozen} onValueChange={toggleFreeze} />
       </View>
+      <Section title="Limits" hint="Under the auto limit it goes through. Above it, you decide. Above the max, it is blocked." />
       <Field label="Auto-approve up to (SOL)" value={auto} onChange={setAuto} />
       <Field label="Hard cap per transaction (SOL)" value={hard} onChange={setHard} />
       <Field label="Daily cap (SOL)" value={daily} onChange={setDaily} />
       <Button title="Save limits" kind="secondary" loading={saving} onPress={() => save()} />
 
-      <T size={13} muted>Allowed recipients</T>
+      <Section title="Allowed recipients" hint={p?.allowedRecipients.length ? undefined : "None yet. Anyone can be a recipient, with a new-recipient warning."} />
       {p?.allowedRecipients.map((r) => (
         <View key={r} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Mono selectable>{r.slice(0, 8)}…{r.slice(-6)}</Mono>
@@ -162,6 +197,7 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
         </View>
       )}
 
+      <Section title="Key and access" />
       <View style={{ flexDirection: "row", gap: 8 }}>
         <View style={{ flex: 1 }}><Button title="New key" kind="secondary" onPress={rotate} /></View>
         <View style={{ flex: 1 }}><Button title="Remove agent" kind="danger" onPress={remove} /></View>
@@ -178,6 +214,10 @@ export function Agents() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [pairing, setPairing] = useState<{ code: string; expiresAt: number }>();
   const [error, setError] = useState<string>();
+  const [server, setServer] = useState("");
+  useEffect(() => {
+    getServerUrl().then(setServer).catch(() => {});
+  }, []);
 
   const pair = async () => {
     try {
@@ -190,17 +230,46 @@ export function Agents() {
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, gap: 14 }}>
-      <T size={24} weight="bold">Agents</T>
-      <Card style={{ gap: 10 }}>
-        <T weight="semibold">Pair a new agent</T>
-        <T size={13} muted>{"Generate a code, then run `npx nod-sdk pair CODE --api <your server>` where your agent runs."}</T>
-        {pairing && <Mono size={28} medium selectable>{pairing.code}</Mono>}
-        {pairing && <T size={12} muted>Expires in 5 minutes.</T>}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Logo size={36} radius={10} />
+        <View style={{ flex: 1 }}>
+          <T size={24} weight="bold">Agents</T>
+          <T size={13} muted>{agents.length === 0 ? "None paired yet" : `${agents.length} paired`}</T>
+        </View>
+      </View>
+
+      <Card style={{ gap: 12 }}>
+        <View style={{ gap: 2 }}>
+          <T weight="semibold">Pair a new agent</T>
+          <T size={13} muted>Get a one-time code, then give it to your agent. Its key is shown once, to the agent only.</T>
+        </View>
+        {pairing ? (
+          <View style={{ gap: 8 }}>
+            <View style={{ borderWidth: 1, borderColor: c.primary, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}>
+              <Mono size={30} medium selectable>{pairing.code}</Mono>
+              <T size={12} muted>Expires in 5 minutes</T>
+            </View>
+            <T size={12} muted>Run where your agent lives:</T>
+            <View style={{ backgroundColor: c.bg, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 10 }}>
+              <Mono size={12} selectable>{`npx nod-sdk pair ${pairing.code} --api ${server || "<your server>"}`}</Mono>
+            </View>
+          </View>
+        ) : null}
         {error && <T size={13} style={{ color: c.danger }}>{error}</T>}
         <Button title={pairing ? "New code" : "Show pairing code"} onPress={pair} />
       </Card>
-      {agents.length === 0 && <T muted>No agents paired yet. Pair one above to give it a spending limit.</T>}
-      {agents.length > 1 && <T size={13} muted>{agents.length} agents. Tap one to change its limits, freeze it or remove it.</T>}
+
+      {agents.length === 0 ? (
+        <View style={{ alignItems: "center", gap: 10, paddingTop: 20 }}>
+          <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" }}>
+            <Feather name="cpu" size={34} color={c.muted} />
+          </View>
+          <T size={18} weight="semibold">No agents yet</T>
+          <T muted style={{ textAlign: "center" }}>Pair one above and set how much it may spend on its own. Anything over that waits for your Nod.</T>
+        </View>
+      ) : (
+        agents.length > 1 && <T size={13} muted>Tap an agent to change its limits, freeze it or remove it.</T>
+      )}
       {agents.map((a) => (
         <AgentCard
           key={a.id + (a.policy ? JSON.stringify(a.policy) : "")}

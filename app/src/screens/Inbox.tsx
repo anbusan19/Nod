@@ -35,19 +35,90 @@ function tone(status: Proposal["status"]): "ok" | "warn" | "danger" | "neutral" 
   return "neutral";
 }
 
+const STATUS_ICON: Record<Proposal["status"], React.ComponentProps<typeof Feather>["name"]> = {
+  confirmed: "check",
+  auto_approved: "check",
+  approved: "check",
+  submitted: "send",
+  awaiting_human: "clock",
+  rejected: "x",
+  blocked: "slash",
+  expired: "clock",
+  failed: "alert-triangle",
+};
+
+const STATUS_LABEL: Record<Proposal["status"], string> = {
+  confirmed: "Confirmed",
+  auto_approved: "Auto-approved",
+  approved: "Approved",
+  submitted: "Submitted",
+  awaiting_human: "Waiting",
+  rejected: "Rejected",
+  blocked: "Blocked",
+  expired: "Expired",
+  failed: "Failed",
+};
+
+/** One line of history: a status icon, what it was, who asked, and how it ended. */
 function Row({ p, onPress }: { p: Proposal; onPress: () => void }) {
+  const c = useColors();
+  const t = tone(p.status);
+  const fg = t === "ok" ? c.ok : t === "warn" ? c.warn : t === "danger" ? c.danger : c.muted;
+  const bg = t === "ok" ? c.okBg : t === "warn" ? c.warnBg : t === "danger" ? c.dangerBg : c.border;
   return (
-    <Pressable onPress={onPress}>
-      <Card style={{ gap: 6 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <T weight="semibold">{p.agentName ?? "Agent"}</T>
-          <Badge label={p.status.replace("_", " ")} tone={tone(p.status)} />
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+      <Card style={{ flexDirection: "row", gap: 12, alignItems: "flex-start", padding: 14 }}>
+        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: bg, alignItems: "center", justifyContent: "center", marginTop: 2 }}>
+          <Feather name={STATUS_ICON[p.status] ?? "circle"} size={19} color={fg} />
         </View>
-        <Mono size={14}>{summary(p)}</Mono>
-        {p.blockReason && <T size={13} muted>{p.blockReason}</T>}
-        <T size={12} muted>{new Date(p.createdAt).toLocaleString()}</T>
+        <View style={{ flex: 1, gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <T size={13} muted numberOfLines={1} style={{ flexShrink: 1 }}>{p.agentName ?? "Agent"}</T>
+            <T size={12} muted>{new Date(p.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</T>
+          </View>
+          <T size={16} weight="semibold">{summary(p)}</T>
+          {p.blockReason ? <T size={13} style={{ color: c.danger }}>{p.blockReason}</T> : p.reason ? <T size={13} muted numberOfLines={1}>“{p.reason}”</T> : null}
+          <View style={{ marginTop: 4 }}>
+            <Badge label={STATUS_LABEL[p.status] ?? p.status.replace("_", " ")} tone={t} />
+          </View>
+        </View>
       </Card>
     </Pressable>
+  );
+}
+
+/** Three counters above the history, so the outcome of everything agents tried is visible at a glance. */
+function Summary({ confirmed, rejected, blocked }: { confirmed: number; rejected: number; blocked: number }) {
+  const c = useColors();
+  const tiles = [
+    { label: "Confirmed", n: confirmed, color: c.ok },
+    { label: "Rejected", n: rejected, color: c.danger },
+    { label: "Blocked", n: blocked, color: c.warn },
+  ];
+  return (
+    <View style={{ flexDirection: "row", gap: 10 }}>
+      {tiles.map((t) => (
+        <Card key={t.label} style={{ flex: 1, padding: 12, gap: 2 }}>
+          <T size={24} weight="bold" style={{ color: t.n > 0 ? t.color : c.muted }}>{t.n}</T>
+          <T size={12} muted>{t.label}</T>
+        </Card>
+      ))}
+    </View>
+  );
+}
+
+function EmptyActivity({ filtering }: { filtering: boolean }) {
+  const c = useColors();
+  return (
+    <View style={{ alignItems: "center", gap: 12, paddingTop: 36 }}>
+      <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" }}>
+        <Feather name={filtering ? "filter" : "activity"} size={34} color={c.muted} />
+      </View>
+      <T size={18} weight="semibold">{filtering ? "Nothing matches" : "No activity yet"}</T>
+      <T muted style={{ textAlign: "center" }}>
+        {filtering ? "Try a different status or agent." : "Every request your agents make, and how it ended, will be listed here."}
+      </T>
+    </View>
   );
 }
 
@@ -204,11 +275,13 @@ export function Inbox({ mode, onNavigate }: { mode: "approvals" | "activity"; on
             <View style={{ flex: 1 }}>
               <T size={24} weight="bold">{mode === "approvals" ? "Needs your Nod" : "Activity"}</T>
               {mode === "approvals" && data.length > 0 ? <T size={13} muted>{data.length === 1 ? "1 request is waiting" : `${data.length} requests are waiting`}</T> : null}
+              {isActivity && proposals.length > 0 ? <T size={13} muted>{`${proposals.length} request${proposals.length === 1 ? "" : "s"} so far`}</T> : null}
             </View>
           </View>
           {error && data.length > 0 && <T size={13} style={{ color: c.danger }}>Can't reach the backend: {error}</T>}
           {isActivity && proposals.length > 0 && (
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: 10 }}>
+              <Summary confirmed={counts.confirmed} rejected={counts.rejected} blocked={counts.blocked} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {STATUS_FILTERS.filter((f) => f.key === "all" || f.key === status || counts[f.key] > 0).map((f) => (
                   <Chip key={f.key} label={f.label} count={counts[f.key]} selected={status === f.key} onPress={() => setStatus(f.key)} />
@@ -239,7 +312,7 @@ export function Inbox({ mode, onNavigate }: { mode: "approvals" | "activity"; on
           mode === "approvals" ? (
             <AllClear server={server} agentCount={agents.length} error={error} onRetry={() => refresh()} onNavigate={(t) => onNavigate?.(t)} />
           ) : (
-            <T muted>{filtering ? "Nothing matches these filters." : "No activity yet."}</T>
+            <EmptyActivity filtering={filtering} />
           )
         ) : null
       }
