@@ -18,6 +18,16 @@ const config: ExpoConfig = {
     versionCode: 1, // bump on every release build; Android refuses lower numbers
     googleServicesFile,
     permissions: ["USE_BIOMETRIC"],
+    // App Links for the landing site, so Android verifies this app against its assetlinks.json (what Phantom
+    // checks before it re-authorizes silently). Scoped to one path so ordinary links to the site still open the browser.
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: [{ scheme: "https", host: "nod-sol.vercel.app", pathPrefix: "/open-nod" }],
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+    ],
     adaptiveIcon: {
       backgroundColor: "#070606",
       foregroundImage: "./assets/android-icon-foreground.png",

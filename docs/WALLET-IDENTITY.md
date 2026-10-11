@@ -14,7 +14,11 @@ On Android, the spec's way to verify a native app is **Digital Asset Links**: th
 
 Source: [MWA 2.0 specification, "Dapp identity verification" and `authorize`](https://solana-mobile.github.io/mobile-wallet-adapter/spec/spec.html).
 
-## The fix (needs your product website)
+## Status
+
+Done in the repo: `identity.uri` is `https://nod-sol.vercel.app`, the landing site serves `/.well-known/assetlinks.json` (debug fingerprint) and `/favicon.ico`, and `app.config.ts` declares an auto-verified App Link for that host (scoped to `/open-nod`). Still to do: redeploy the landing page, rebuild the app, and add the **release** key's SHA-256 to `landing/.well-known/assetlinks.json`. Not yet confirmed on a device.
+
+## The fix
 
 1. Pick the site, for example `https://nod.example.com`.
 2. Serve this at `https://nod.example.com/.well-known/assetlinks.json`, over HTTPS, as `application/json`, with no redirects:
@@ -41,6 +45,6 @@ Source: [MWA 2.0 specification, "Dapp identity verification" and `authorize`](ht
 
 I verified the symptom (Phantom's log line) and the spec's rules. I have **not** confirmed that Phantom's check is exactly the Digital Asset Links flow above, or whether step 4 is required for it; that needs a real domain to test against.
 
-## Until then
+## If it still shows two screens
 
-Two Phantom screens per signing is expected for Nod. The first connection after a disconnect always shows Connect.
+Check Phantom's log for `dApp identity is not verified`, confirm `https://nod-sol.vercel.app/.well-known/assetlinks.json` returns the JSON with the fingerprint of the key that signed the installed build, and that the app was reinstalled after the manifest change. The first connection after a disconnect always shows Connect.

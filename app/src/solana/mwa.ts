@@ -17,10 +17,11 @@ import { kv } from "../storage";
 // Phantom also rejects an absolute `icon` (-32602, "identity.icon must be a relative URI"), so the icon is a path
 // relative to `uri` and only shows once `uri` is a site serving /favicon.ico.
 //
-// When the product website exists: set `uri` to it, serve favicon.ico and assetlinks.json from it.
+// `uri` is the landing site, which serves favicon.ico and /.well-known/assetlinks.json (landing/.well-known).
+// The release keystore's SHA-256 must be listed there too, or release builds stay unverified.
 const IDENTITY = {
   name: "Nod",
-  uri: "https://github.com/anbusan19/nod",
+  uri: "https://nod-sol.vercel.app",
   icon: "favicon.ico",
 };
 
