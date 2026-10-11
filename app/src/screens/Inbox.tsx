@@ -68,7 +68,11 @@ function Row({ p, onPress }: { p: Proposal; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
       <Card style={{ flexDirection: "row", gap: 12, alignItems: "flex-start", padding: 14 }}>
-        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: bg, alignItems: "center", justifyContent: "center", marginTop: 2 }}>
+        <View
+          accessible
+          accessibilityLabel={STATUS_LABEL[p.status] ?? p.status}
+          style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: bg, alignItems: "center", justifyContent: "center", marginTop: 2 }}
+        >
           <Feather name={STATUS_ICON[p.status] ?? "circle"} size={19} color={fg} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
@@ -78,32 +82,9 @@ function Row({ p, onPress }: { p: Proposal; onPress: () => void }) {
           </View>
           <T size={16} weight="semibold">{summary(p)}</T>
           {p.blockReason ? <T size={13} style={{ color: c.danger }}>{p.blockReason}</T> : p.reason ? <T size={13} muted numberOfLines={1}>“{p.reason}”</T> : null}
-          <View style={{ marginTop: 4 }}>
-            <Badge label={STATUS_LABEL[p.status] ?? p.status.replace("_", " ")} tone={t} />
-          </View>
         </View>
       </Card>
     </Pressable>
-  );
-}
-
-/** Three counters above the history, so the outcome of everything agents tried is visible at a glance. */
-function Summary({ confirmed, rejected, blocked }: { confirmed: number; rejected: number; blocked: number }) {
-  const c = useColors();
-  const tiles = [
-    { label: "Confirmed", n: confirmed, color: c.ok },
-    { label: "Rejected", n: rejected, color: c.danger },
-    { label: "Blocked", n: blocked, color: c.warn },
-  ];
-  return (
-    <View style={{ flexDirection: "row", gap: 10 }}>
-      {tiles.map((t) => (
-        <Card key={t.label} style={{ flex: 1, padding: 12, gap: 2 }}>
-          <T size={24} weight="bold" style={{ color: t.n > 0 ? t.color : c.muted }}>{t.n}</T>
-          <T size={12} muted>{t.label}</T>
-        </Card>
-      ))}
-    </View>
   );
 }
 
@@ -280,8 +261,7 @@ export function Inbox({ mode, onNavigate }: { mode: "approvals" | "activity"; on
           </View>
           {error && data.length > 0 && <T size={13} style={{ color: c.danger }}>Can't reach the backend: {error}</T>}
           {isActivity && proposals.length > 0 && (
-            <View style={{ gap: 10 }}>
-              <Summary confirmed={counts.confirmed} rejected={counts.rejected} blocked={counts.blocked} />
+            <View style={{ gap: 8 }}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {STATUS_FILTERS.filter((f) => f.key === "all" || f.key === status || counts[f.key] > 0).map((f) => (
                   <Chip key={f.key} label={f.label} count={counts[f.key]} selected={status === f.key} onPress={() => setStatus(f.key)} />
