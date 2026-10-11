@@ -139,13 +139,13 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
         </View>
         {p && (
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <Stat label="Auto up to (SOL)" value={fmtSol(p.autoLimitLamports)} />
-            <Stat label="Max per tx (SOL)" value={fmtSol(p.hardCapLamports)} />
-            <Stat label="Daily cap (SOL)" value={fmtSol(p.dailyCapLamports)} />
+            <Stat label="Auto up to" value={fmtSol(p.autoLimitLamports)} />
+            <Stat label="Max per tx" value={fmtSol(p.hardCapLamports)} />
+            <Stat label="Daily cap" value={fmtSol(p.dailyCapLamports)} />
           </View>
         )}
         <T size={12} muted>
-          {mine.length === 0 ? "No proposals yet" : `${mine.length} proposal${mine.length === 1 ? "" : "s"}${last ? ` · last ${new Date(last).toLocaleDateString()}` : ""}`}
+          {"Limits in SOL"}{" · "}{mine.length === 0 ? "No proposals yet" : `${mine.length} proposal${mine.length === 1 ? "" : "s"}${last ? ` · last ${new Date(last).toLocaleDateString()}` : ""}`}
         </T>
       </Pressable>
       {open && (
@@ -158,7 +158,7 @@ function AgentCard({ agent, open, onToggle }: { agent: Agent; open: boolean; onT
       <Section title="Limits" hint="Under the auto limit it goes through. Above it, you decide. Above the max, it is blocked." />
       <Field label="Auto-approve up to (SOL)" value={auto} onChange={setAuto} />
       <Field label="Hard cap per transaction (SOL)" value={hard} onChange={setHard} />
-      <Field label="Daily cap (SOL)" value={daily} onChange={setDaily} />
+      <Field label="Daily cap" value={daily} onChange={setDaily} />
       <Button title="Save limits" kind="secondary" loading={saving} onPress={() => save()} />
 
       <Section title="Allowed recipients" hint={p?.allowedRecipients.length ? undefined : "None yet. Anyone can be a recipient, with a new-recipient warning."} />
