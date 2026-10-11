@@ -20,3 +20,6 @@ app/ios/
 *.db-wal
 *-firebase-adminsdk-*.json
 *.tgz
+
+# generated pitch GIFs
+docs/pitch/gifs/
