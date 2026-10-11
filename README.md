@@ -63,7 +63,7 @@ Typical use cases: an agent paying for services, an agent trading or rebalancing
 flowchart LR
     subgraph Agent["AI agent (any script or bot)"]
         A1[Strategy / task logic]
-        A2[Nod SDK<br/>propose&#40;tx, reason&#41;]
+        A2["Nod SDK<br/>propose(tx, reason)"]
     end
 
     subgraph Backend["Nod backend"]
