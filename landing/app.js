@@ -5,8 +5,6 @@
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const cssVar = (el, name) => getComputedStyle(el).getPropertyValue(name).trim();
 
-  // Placeholder links (APK, repo, docs) go nowhere yet; do not jump to the top of the page.
-  $$("[data-todo]").forEach((a) => a.addEventListener("click", (e) => e.preventDefault()));
 
   const nav = $("#nav");
   const onScroll = () => nav.classList.toggle("scrolled", scrollY > 8);

@@ -28,6 +28,8 @@
 
 Built for **Clock In: A Solana Mobile Hackathon** (Android, Mobile Wallet Adapter, Solana dApp Store).
 
+**Try it:** [download the Android APK](https://github.com/anbusan19/Nod/releases/tag/v0.1.0) (devnet) and switch on *Use the Nod community server* on first launch. Landing page: https://nod-sol.vercel.app. Run your own backend: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ---
 
 ## Table of contents
