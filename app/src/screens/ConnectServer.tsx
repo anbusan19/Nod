@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, Switch, TextInput, View } from "react-native";
+import { config } from "../config";
 import { inspectServer, parseServerUrl } from "../api/server";
 import { Button, Card, T } from "../components/ui";
 import { useApp } from "../state";
@@ -14,6 +15,13 @@ export function ConnectServer() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>();
+
+  const community = config.communityServer;
+  const useCommunity = Boolean(community) && input === community;
+  const toggleCommunity = (on: boolean) => {
+    setMessage(undefined);
+    setInput(on ? community : "");
+  };
 
   const connect = async () => {
     setMessage(undefined);
@@ -40,6 +48,29 @@ export function ConnectServer() {
       <T size={28} weight="bold">Welcome to Nod</T>
       <T muted>Nothing moves without your Nod. This app approves what your AI agents want to do with your money, one decoded card at a time.</T>
 
+      {community ? (
+        <Card style={{ gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T weight="semibold">Use the Nod community server</T>
+              <T size={13} muted>A shared demo server so you can try Nod right away. Switch it off to use your own.</T>
+            </View>
+            <Switch
+              accessibilityLabel="Use the Nod community server"
+              value={useCommunity}
+              onValueChange={toggleCommunity}
+              trackColor={{ false: c.border, true: c.primary }}
+              thumbColor={useCommunity ? c.onPrimary : c.muted}
+            />
+          </View>
+          {useCommunity && (
+            <T size={12} muted>
+              Devnet only, no uptime guarantee. The operator of this server can see the proposals your agents send, their reasons and your wallet address. It never has your keys, and nothing is signed without you.
+            </T>
+          )}
+        </Card>
+      ) : null}
+
       <Card style={{ gap: 10 }}>
         <T weight="semibold">Connect to your Nod server</T>
         <T size={13} muted>
@@ -47,7 +78,8 @@ export function ConnectServer() {
         </T>
         <TextInput
           value={input}
-          onChangeText={setInput}
+          onChangeText={(v) => { setInput(v); setMessage(undefined); }}
+          editable={!useCommunity}
           placeholder="https://nod.example.com"
           placeholderTextColor={c.muted}
           autoCapitalize="none"

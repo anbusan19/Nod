@@ -17,6 +17,8 @@ import { useApp } from "../state";
 import { kv } from "../storage";
 import { applyThemePref, useColors, type ThemePref } from "../theme/colors";
 
+const COMMUNITY_NAME = "Nod community server";
+
 export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
   const c = useColors();
   const { wallet, connect, disconnect, changeServer } = useApp();
@@ -81,7 +83,7 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
       if (u) {
         // The server in use is always on the list. Add it once; never overwrite a name the user gave it.
         const known = (await loadServers(kv)).some((x) => normalizeUrl(x.url) === normalizeUrl(u));
-        if (!known) await upsertServer(kv, u, { name: normalizeUrl(u) === normalizeUrl(config.apiUrl) ? "Built-in server" : undefined });
+        if (!known) await upsertServer(kv, u, { name: normalizeUrl(u) === normalizeUrl(config.apiUrl) ? "Built-in server" : config.communityServer && normalizeUrl(u) === normalizeUrl(config.communityServer) ? COMMUNITY_NAME : undefined });
       }
       setServers(sortServers(await loadServers(kv), u));
     })().catch(() => {});
@@ -133,6 +135,18 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
       setAdding(false);
       return `Added ${await nameOf(parsed.url)}. Use Test connection to check it, or tap it to switch.`;
     });
+
+  const onCommunity = Boolean(config.communityServer) && Boolean(server) && normalizeUrl(server) === normalizeUrl(config.communityServer);
+  /** Opt in to (or out of) the shared demo server. Agents are paired per server, so each side keeps its own agents. */
+  const toggleCommunity = (on: boolean) => {
+    if (on) {
+      // Name it first, then switch (switchTo reports its own result, so it is not wrapped again).
+      return upsertServer(kv, config.communityServer, { name: COMMUNITY_NAME }).then(() => switchTo(config.communityServer));
+    }
+    const other = servers.find((s) => normalizeUrl(s.url) !== normalizeUrl(config.communityServer));
+    if (!other) return runServer(async () => "Add your own server first, then switch the community server off.");
+    return switchTo(other.url);
+  };
 
   const testServer = (url: string) => {
     setTesting(url);
@@ -348,6 +362,23 @@ export function Settings({ onOpenAbout }: { onOpenAbout: () => void }) {
             </View>
           </View>
         )}
+
+        {config.communityServer ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: c.border, borderRadius: 14, padding: 12 }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T size={14} weight="semibold">Nod community server</T>
+              <T size={12} muted>Shared demo server, devnet only, no uptime guarantee. Its operator can see proposals, reasons and wallet addresses, never your keys.</T>
+            </View>
+            <Switch
+              accessibilityLabel="Use the Nod community server"
+              value={onCommunity}
+              disabled={serverBusy}
+              onValueChange={toggleCommunity}
+              trackColor={{ false: c.border, true: c.primary }}
+              thumbColor={onCommunity ? c.onPrimary : c.muted}
+            />
+          </View>
+        ) : null}
 
         <ServerList servers={servers} current={server} busy={serverBusy} testing={testing} onUse={switchTo} onRename={renameSaved} onRemove={removeSaved} onTest={testServer} />
       </Card>
