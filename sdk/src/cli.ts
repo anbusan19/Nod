@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Nod } from "./client.js";
 import { NodError } from "./errors.js";
+import { renderPairBanner, supportsColor } from "./banner.js";
 
 const HELP = `nod: connect an agent to Nod
 
@@ -28,7 +29,13 @@ async function main() {
   if (cmd === "pair") {
     const code = rest.find((a, i) => !a.startsWith("--") && !rest[i - 1]?.startsWith("--"));
     if (!code) throw new NodError("Usage: nod pair <CODE> [--name NAME]. The code is shown in the Nod app under Agents.");
-    const { agentId, apiKey } = await Nod.pair(api, code, flag(rest, "name") ?? "my-agent");
+    const name = flag(rest, "name") ?? "my-agent";
+    const { agentId, apiKey } = await Nod.pair(api, code, name);
+    // The banner is for a person at a terminal. When the output is piped or redirected (`> .env`) it is
+    // left out, so what lands in the file is only the settings.
+    if (process.stdout.isTTY) {
+      console.log(renderPairBanner({ agentName: name, agentId, api }, { color: supportsColor(), columns: process.stdout.columns }));
+    }
     console.log(`Paired agent ${agentId}\n\nAdd this to your agent's environment (keep it secret):\n\nNOD_API_URL=${api}\nNOD_AGENT_KEY=${apiKey}`);
     return;
   }
